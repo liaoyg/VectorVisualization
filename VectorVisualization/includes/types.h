@@ -1,7 +1,33 @@
-#pragma once
-
-#ifndef TYPES_H_
-#define TYPES_H_
+/*
+ * Copyright (c) 2008  Martin Falk <falk@visus.uni-stuttgart.de>
+ *                     Visualization Research Center (VISUS), 
+ *                     Universität Stuttgart, Germany
+ *
+ * This source code is distributed as part of the publication 
+ * "Output-Sensitive 3D Line Integral Convolution". 
+ * Sample images and movies of this application can be found 
+ * at http://www.vis.uni-stuttgart.de/texflowvis . 
+ * This file may be distributed, modified, and used free of charge 
+ * as long as this copyright notice is included in its original 
+ * form. Commercial use is strictly prohibited. However we request
+ * that acknowledgement is given to the following article
+ *
+ *     M. Falk, D. Weiskopf.
+ *     Output-Sensitive 3D Line Integral Convolution,
+ *     IEEE Transactions on Visualization and Computer Graphics, 2008.
+ *
+ * This code is based on the Single Pass Volume Renderer from Stegmaier et al.
+ *     S. Stegmaier, M. Strengert, T. Klein, and T. Ertl. 
+ *     A Simple and Flexible Volume Rendering Framework for 
+ *     Graphics-Hardware-based Raycasting, 
+ *     Proceedings of Volume Graphics 2005, pp.187-195, 2005
+ *
+ * Filename: types.h
+ * 
+ * $Id: types.h,v 1.3 2008/05/28 09:56:18 falkmn Exp $ 
+ */
+#ifndef _VOLIC_TYPES_H_
+#define _VOLIC_TYPES_H_
 
 //#ifdef _WIN32
 //#  include <windows.h>
@@ -12,8 +38,8 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <GL\glew.h>
-#include <GL\freeglut.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 #define DIR_SEP_WIN '\\'
 #define DIR_SEP '/'
@@ -42,8 +68,8 @@
 
 #define MAX_FRAMES            5
 
-#define WINDOW_WIDTH        1280// 352  // 512
-#define WINDOW_HEIGHT       960// 288  // 512
+#define WINDOW_WIDTH        512// 352  // 512
+#define WINDOW_HEIGHT       512// 288  // 512
 
 #define FOVY                30.0
 #define NEAR_CLIP            0.001
@@ -62,42 +88,42 @@
 
 enum RenderTechnique
 {
-	VOLIC_VOLUME,
-	VOLIC_RAYCAST,
-	VOLIC_SLICING,
-	//VOLIC_DEPTH_PEEL_MULTI
+    VOLIC_VOLUME,
+    VOLIC_RAYCAST,
+    VOLIC_SLICING, 
+    //VOLIC_DEPTH_PEEL_MULTI
 };
 
-enum MouseMode
+enum MouseMode 
 {
-	VOLIC_MOUSE_ROTATE,
-	VOLIC_MOUSE_TRANSLATE,
-	VOLIC_MOUSE_DOLLY,
-	VOLIC_MOUSE_ROTATE_LIGHT,
-	VOLIC_MOUSE_TRANSLATE_LIGHT,
-	VOLIC_MOUSE_ROTATE_CLIP,
-	VOLIC_MOUSE_TRANSLATE_CLIP
+    VOLIC_MOUSE_ROTATE, 
+    VOLIC_MOUSE_TRANSLATE, 
+    VOLIC_MOUSE_DOLLY, 
+    VOLIC_MOUSE_ROTATE_LIGHT, 
+    VOLIC_MOUSE_TRANSLATE_LIGHT,
+    VOLIC_MOUSE_ROTATE_CLIP,
+    VOLIC_MOUSE_TRANSLATE_CLIP
 };
 
 
 struct LICParams
 {
-	LICParams(void) : stepSizeVol(1.0f / 128.0f), gradientScale(30.0f),
-		illumScale(1.0f), freqScale(5.0f),
-		numIterations(255),
-		stepsForward(32), stepsBackward(32),
-		stepSizeLIC(0.01f)
-	{}
+    LICParams(void) : stepSizeVol(1.0f/128.0f), gradientScale(30.0f),
+                      illumScale(1.0f),freqScale(5.0f),
+                      numIterations(255),
+                      stepsForward(32),stepsBackward(32),
+                      stepSizeLIC(0.01f)
+    {}
 
-	float stepSizeVol;
-	float gradientScale;
-	float illumScale;
-	float freqScale;
+    float stepSizeVol;
+    float gradientScale;
+    float illumScale;
+    float freqScale;
 
-	int numIterations;
-	int stepsForward;
-	int stepsBackward;
-	float stepSizeLIC;
+    int numIterations;
+    int stepsForward;
+    int stepsBackward;
+    float stepSizeLIC;
 };
 
 
@@ -136,6 +162,10 @@ struct LICParams
             printf("Framebuffer incomplete, missing attachment\n");   \
             assert(0);                                                \
             break;                                                    \
+        case GL_FRAMEBUFFER_INCOMPLETE_DUPLICATE_ATTACHMENT_EXT:      \
+            printf("Framebuffer incomplete, duplicate attachment\n"); \
+            assert(0);                                                \
+            break;                                                    \
         case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:                \
             printf("Framebuffer incomplete, attached images "         \
                    "must have same dimensions\n");                    \
@@ -164,13 +194,13 @@ struct LICParams
      }                                                                \
    }
 /*
-case GL_FRAMEBUFFER_STATUS_ERROR_EXT:                         \
-printf("Framebuffer status error\n");                     \
-break;                                                    \
+        case GL_FRAMEBUFFER_STATUS_ERROR_EXT:                         \
+            printf("Framebuffer status error\n");                     \
+            break;                                                    \
 */
 #else 
 #  define CHECK_FOR_OGL_ERROR() 
 #  define CHECK_FRAMEBUFFER_STATUS()
 #endif
 
-#endif // TYPES_H_
+#endif // _VOLIC_TYPES_H_

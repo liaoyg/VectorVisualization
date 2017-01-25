@@ -1,20 +1,28 @@
 #include <Windows.h>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-#include <iostream>
 
+#include <math.h>
+#include <iostream>
+#include <iomanip>
+#include <stdlib.h>
+
+//#include "ogldev_util.h"
+//#include "ogldev_math_3d.h"
+#include "imageUtils.h"
+#include "texture.h"
+#include "illumination.h"
 #include "types.h"
 #include "3DLIC.h""
-#include "ogldev_util.h"
-#include "ogldev_math_3d.h"
+
 
 using namespace std;
 
 GLuint VBO;
 GLuint gScaleLocation;
 
-const char* pVSFileName = "shader/shader.vs";
-const char* pFSFileName = "shader/shader.fs";
+//const char* pVSFileName = "shader/shader.vs";
+//const char* pFSFileName = "shader/shader.fs";
 
 void changeViewPort(int w, int h)
 {
@@ -31,61 +39,58 @@ void display(void)
 {
 	char fpsStr[10];
 
-	//fpsCounter.frameStart();
+	fpsCounter.frameStart();
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	//static float Scale = 0.0f;
 
-	glClear(GL_COLOR_BUFFER_BIT);
+	//Scale += 0.001f;
 
-	static float Scale = 0.0f;
+	//glUniform1f(gScaleLocation, sinf(Scale));
 
-	Scale += 0.001f;
+	//glEnableVertexAttribArray(0);
+	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glUniform1f(gScaleLocation, sinf(Scale));
+	//glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-
-	glDisableVertexAttribArray(0);
+	//glDisableVertexAttribArray(0);
 
 
-	//renderer.render(updateScene || updateSceneCont);
-	//updateScene = false;
+	renderer.render(updateScene || updateSceneCont);
+	updateScene = false;
 	CHECK_FOR_OGL_ERROR();
 
 	//// render light
-	//if (lightVisible)
-	//	renderer.renderLight(!currentClipPlane);
-	//CHECK_FOR_OGL_ERROR();
+	if (lightVisible)
+		renderer.renderLight(!currentClipPlane);
+	CHECK_FOR_OGL_ERROR();
 
-	//// draw transfer function editor
-	//tfEdit.draw();
+	// draw transfer function editor
+	tfEdit.draw();
 
-	//// show HUD
-	//snprintf(fpsStr, 10, "%2.2f", fpsCounter.getFPS());
-	//hud.DrawHUD(fpsStr, 420, 2);
-	////hud.DrawHUD();
+	// show HUD
+	snprintf(fpsStr, 10, "%2.2f", fpsCounter.getFPS());
+	hud.DrawHUD(fpsStr, 420, 2);
+	//hud.DrawHUD();
 
 	CHECK_FOR_OGL_ERROR();
 
 	glutSwapBuffers();
-	//fpsCounter.frameFinished();
+	fpsCounter.frameFinished();
 }
 
 static void CreateVertexBuffer()
 {
-	Vector3f Vertices[3];
-	Vertices[0] = Vector3f(-1.0f, -1.0f, 0.0f);
-	Vertices[1] = Vector3f(1.0f, -1.0f, 0.0f);
-	Vertices[2] = Vector3f(0.0f, 1.0f, 0.0f);
+	//Vector3 Vertices[3];
+	//Vertices[0] = Vector3f(-1.0f, -1.0f, 0.0f);
+	//Vertices[1] = Vector3f(1.0f, -1.0f, 0.0f);
+	//Vertices[2] = Vector3f(0.0f, 1.0f, 0.0f);
 
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+	//glGenBuffers(1, &VBO);
+	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
 }
 
 void resize(int width, int height)
@@ -103,22 +108,22 @@ void resize(int width, int height)
 	glViewport(0, 0, width, height);
 	CHECK_FOR_OGL_ERROR();
 
-	//renderer.resize(width, height);
+	renderer.resize(width, height);
 	CHECK_FOR_OGL_ERROR();
 
-	//cam.setWindow(width, height);
-	//light.setWindow(width, height);
+	cam.setWindow(width, height);
+	light.setWindow(width, height);
 
-	//for (int i = 0; i<3; ++i)
-	//	clipPlanes[i].setWindow(width, height);
+	for (int i = 0; i<3; ++i)
+		clipPlanes[i].setWindow(width, height);
 
-	//tfEdit.resize(width, height);
-	//hud.SetViewport(viewport, true);
-	//CHECK_FOR_OGL_ERROR();
+	tfEdit.resize(width, height);
+	hud.SetViewport(viewport, true);
+	CHECK_FOR_OGL_ERROR();
 
-	//aspect = (float)width / height;
+	aspect = (float)width / height;
 
-	//updateScene = true;
+	updateScene = true;
 }
 
 static void AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType)

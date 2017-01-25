@@ -73,12 +73,12 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Users\liaoyg\Documents\Visual Studio 2015\Projects\VectorVisualization\VectorVisualization\freeglut\include;C:\Users\liaoyg\Documents\Visual Studio 2015\Projects\VectorVisualization\VectorVisualization\glew-1.11.0\include;C:\Users\liaoyg\Documents\Visual Studio 2015\Projects\VectorVisualization\VectorVisualization\includes;C:\Users\liaoyg\Documents\Visual Studio 2015\Projects\VectorVisualization\VectorVisualization\includes\assimp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>D:\Project\Visual Studio\VectorVisualization\VectorVisualization\freeglut\include;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\glew-1.11.0\include;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\includes;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\includes\assimp;D:\Program Files %28x86%29\GnuWin32\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\Users\liaoyg\Documents\Visual Studio 2015\Projects\VectorVisualization\VectorVisualization\freeglut\lib;C:\Users\liaoyg\Documents\Visual Studio 2015\Projects\VectorVisualization\VectorVisualization\glew-1.11.0\lib;C:\Users\liaoyg\Documents\Visual Studio 2015\Projects\VectorVisualization\VectorVisualization\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>freeglut.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\Project\Visual Studio\VectorVisualization\VectorVisualization\freeglut\lib;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\glew-1.11.0\lib;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\lib;D:\Program Files %28x86%29\GnuWin32\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>freeglut.lib;glew32.lib;libpngd.lib;libpng.lib;zlibstat.lib;zlibstatd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -115,16 +115,61 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="3DLIC.cpp" />
+    <ClCompile Include="camera.cpp" />
+    <ClCompile Include="dataset.cpp" />
+    <ClCompile Include="fpsCounter.cpp" />
+    <ClCompile Include="GLSLShader.cpp" />
+    <ClCompile Include="gradient.cpp" />
+    <ClCompile Include="hud.cpp" />
+    <ClCompile Include="illumination.cpp" />
+    <ClCompile Include="imageUtils.cpp" />
+    <ClCompile Include="mmath.cpp" />
     <ClCompile Include="ogldev_util.cpp" />
+    <ClCompile Include="parseArg.cpp" />
+    <ClCompile Include="reader.cpp" />
+    <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="slicing.cpp" />
+    <ClCompile Include="texture.cpp" />
+    <ClCompile Include="timer.cpp" />
+    <ClCompile Include="trackball.cpp" />
+    <ClCompile Include="transferEdit.cpp" />
+    <ClCompile Include="transform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="3DLIC.h" />
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="dataset.h" />
+    <ClInclude Include="fpsCounter.h" />
+    <ClInclude Include="GLSLShader.h" />
+    <ClInclude Include="gradient.h" />
+    <ClInclude Include="hud.h" />
+    <ClInclude Include="illumination.h" />
+    <ClInclude Include="imageUtils.h" />
+    <ClInclude Include="mmath.h" />
+    <ClInclude Include="parseArg.h" />
+    <ClInclude Include="reader.h" />
+    <ClInclude Include="renderer.h" />
+    <ClInclude Include="slicing.h" />
+    <ClInclude Include="texture.h" />
+    <ClInclude Include="timer.h" />
+    <ClInclude Include="trackball.h" />
+    <ClInclude Include="transferEdit.h" />
+    <ClInclude Include="transform.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader\shader.fs" />
-    <None Include="shader\shader.vs" />
+    <None Include="shader\background_fragment.glsl" />
+    <None Include="shader\inc_header.glsl" />
+    <None Include="shader\inc_illum.glsl" />
+    <None Include="shader\inc_lic.glsl" />
+    <None Include="shader\lic3d_fragment.glsl" />
+    <None Include="shader\lic3d_slicingblend_fragment.glsl" />
+    <None Include="shader\lic3d_slicing_fragment.glsl" />
+    <None Include="shader\phong_fragment.glsl" />
+    <None Include="shader\phong_vertex.glsl" />
+    <None Include="shader\vectorfield_fragment.glsl" />
+    <None Include="shader\volic_vertex.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

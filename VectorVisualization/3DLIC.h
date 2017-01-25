@@ -1,6 +1,29 @@
 #pragma once
 
-#include "types.h"
+#include "transform.h"
+#include "camera.h"
+#include "hud.h"
+#include "renderer.h"
+#include "transferEdit.h"
+#include "fpsCounter.h"
+#include "dataSet.h"
+#include "parseArg.h"
+
+ParseArguments arguments;
+Camera cam;
+Renderer renderer;
+TransferEdit tfEdit;
+FPSCounter fpsCounter;
+ClipPlane clipPlanes[3];
+ClipPlane *currentClipPlane;
+Transform light;
+
+VectorDataSet vd;
+NoiseDataSet noise;
+Illumination illum;
+LICFilter licFilter;
+
+OpenGLHUD hud;
 
 int mousePosOld[2];
 
@@ -26,6 +49,7 @@ RenderTechnique renderTechnique = VOLIC_VOLUME;
 MouseMode mouseMode;
 LICParams licParams;
 
-
 void display(void);
 void resize(int width, int height);
+void updateHUD(bool forceUpdate = false);
+void keyboard(unsigned char key, int x, int y);
