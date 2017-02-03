@@ -15,7 +15,7 @@ vec3 frequency(in vec3 objPos, in float freqScale,
 
     freqMeasure.x = exp2(freqMeasure.x);
     freqMeasure.y = exp2(freqMeasure.y - 1.0);
-
+	
     freqMeasure *= freqScale;
 
     return vec3(freqMeasure, freqRemainder);

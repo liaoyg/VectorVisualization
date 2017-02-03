@@ -103,7 +103,7 @@ void display(void)
 	renderer.render(updateScene || updateSceneCont);
 
 	//std::cout << "cost for render" << timetest - timer() << std::endl;
-	updateScene = true;
+	//updateScene = true;
 	CHECK_FOR_OGL_ERROR();
 
 	// render light

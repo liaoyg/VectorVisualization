@@ -860,7 +860,7 @@ void Renderer::setRenderVolParams(GLSLParamsLIC *param)
 	if (_lowRes)
 	{
 		if (param->stepSize > -1)
-			glUniform1fARB(param->stepSize, 1.0f*_licParams->stepSizeVol);
+			glUniform1fARB(param->stepSize, 2.0f*_licParams->stepSizeVol);
 		if (param->gradient > -1)
 			glUniform3fARB(param->gradient, _licParams->gradientScale,
 				_licParams->illumScale, 0.7f*_licParams->freqScale);
