@@ -99,7 +99,12 @@ float singleLICstep(in vec3 licdir, in out vec3 newPos,
     // scale with LIC step size
     // also correct length according to camera distance
     licdir *= licParams.z * (logEyeDist*0.5 + 0.3);
-    newPos += licdir;
+    vec3 Pos2 =newPos + licdir;
+	vec4 step2 = texture3D(volumeSampler, Pos2);
+	vec3 licdir2 = 2.0*step2.rgb - 1.0;
+	// licdir2 *= step2.a;
+	licdir2 *= licParams.z * (logEyeDist*0.5 + 0.3);
+	newPos += 0.5 * ( licdir + licdir2 );
 
     step = texture3D(volumeSampler, newPos);
 #ifdef TIME_DEPENDENT
