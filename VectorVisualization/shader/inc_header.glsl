@@ -45,6 +45,7 @@ uniform float timeStep;
 
 // textures (have to be uniform)
 uniform sampler3D volumeSampler;
+uniform sampler3D scalarSampler;
 uniform sampler3D noiseSampler;
 
 uniform sampler2DRect mcOffsetSampler;

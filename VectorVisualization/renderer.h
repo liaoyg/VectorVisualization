@@ -78,6 +78,7 @@ public:
 	bool isDebugModeEnabled(void) { return _debug; }
 
 	void setDataTex(Texture *tex) { _dataTex = tex; }
+	void setScalarTex(Texture *tex) { _scalarTex = tex; }
 	void setNoiseTex(Texture *tex) { _noiseTex = tex; }
 	void setLICFilterTex(Texture *tex) { _licKernelTex = tex; }
 	void setLambda2Tex(Texture *tex) { _lambda2Tex = tex; }
@@ -231,6 +232,7 @@ private:
 
 	// vector data
 	Texture *_dataTex;
+	Texture *_scalarTex;
 	Texture *_noiseTex;
 	// LIC filter kernel
 	Texture *_licKernelTex;

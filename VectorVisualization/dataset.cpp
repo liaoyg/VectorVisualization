@@ -873,8 +873,7 @@ bool VolumeDataSet::loadData(const char *fileName)
 					  // copy volume dimensions from DatFile to VolumeData
 	_vd->dataType = _datFile.getDataType();
 
-	if ((_vd->dataType != DATRAW_UCHAR)
-		|| (_vd->dataType != DATRAW_FLOAT))
+	if ((_vd->dataType != DATRAW_UCHAR) && (_vd->dataType != DATRAW_FLOAT))
 	{
 		fprintf(stderr, "VolumeData:  Only 8bit integer and 32bit "
 			"float scalar is supported.\n");

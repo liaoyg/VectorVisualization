@@ -29,7 +29,7 @@
 Renderer::Renderer(void) : _framebuffer(0), _depthbuffer(0), _stencilbuffer(0),
 _winWidth(1), _winHeight(1), _useFBO(false),
 _renderMode(VOLIC_RAYCAST), _vd(NULL), _licFilter(NULL),
-_dataTex(NULL), _noiseTex(NULL), _licKernelTex(NULL),
+_dataTex(NULL), _noiseTex(NULL), _licKernelTex(NULL), _scalarTex(NULL),
 _lambda2Tex(NULL), _tfRGBTex(NULL), _tfAlphaOpacTex(NULL),
 _illumZoecklerTex(NULL), _illumMalloDiffTex(NULL),
 _illumMalloSpecTex(NULL), _quadric(NULL), _storeFrame(true),
@@ -142,7 +142,7 @@ void Renderer::render(bool update)
 	{
 		// update viewport to render width and heigth
 		// when using low resolution rendering
-		_lowRes = true;
+		//_lowRes = true;
 		if (_lowRes)
 			glViewport(0, 0, _renderWidth, _renderHeight);
 
@@ -917,6 +917,11 @@ void Renderer::setRenderVolTextures(GLSLParamsLIC *param)
 	{
 		glUniform1iARB(param->volumeSampler, _dataTex->texUnit - GL_TEXTURE0_ARB);
 		_dataTex->bind();
+	}
+	if (param->scalarSampler > -1)
+	{
+		glUniform1iARB(param->scalarSampler, _scalarTex->texUnit - GL_TEXTURE0_ARB);
+		_scalarTex->bind();
 	}
 	if (param->noiseSampler > -1)
 	{

@@ -79,6 +79,7 @@ struct GLSLParamsLIC
     GLint alphaCorrection;
 
     GLint volumeSampler;
+	GLint scalarSampler;
     GLint noiseSampler;
     GLint mcOffsetSampler;
     GLint transferRGBASampler;

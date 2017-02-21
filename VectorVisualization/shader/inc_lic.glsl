@@ -99,12 +99,15 @@ float singleLICstep(in vec3 licdir, in out vec3 newPos,
     // scale with LIC step size
     // also correct length according to camera distance
     licdir *= licParams.z * (logEyeDist*0.5 + 0.3);
-    vec3 Pos2 =newPos + licdir;
+    vec3 Pos2 = newPos + licdir;
 	vec4 step2 = texture3D(volumeSampler, Pos2);
 	vec3 licdir2 = 2.0*step2.rgb - 1.0;
-	// licdir2 *= step2.a;
+	//licdir2 = step2.rgb;
+	//licdir2 *= step2.a;
 	licdir2 *= licParams.z * (logEyeDist*0.5 + 0.3);
-	newPos += 0.5 * ( licdir + licdir2 );
+	//Pos2 += 0.5 * licdir2;
+	//newPos += 0.5 * (licdir + licdir2);
+	newPos += 0.3 * licdir;
 
     step = texture3D(volumeSampler, newPos);
 #ifdef TIME_DEPENDENT
@@ -158,6 +161,7 @@ vec4 computeLIC(in vec3 pos, in vec4 vectorFieldSample)
     for (int i=0; i<int(licParams.y); ++i)
     {
         licdir = -2.0*step.rgb + 1.0;
+		//licdir = step.rgb;
         kernelOffset -= licKernel.y;
         illum += singleLICstep(licdir, newPos, step, 
                                kernelOffset, logEyeDist);
@@ -170,6 +174,7 @@ vec4 computeLIC(in vec3 pos, in vec4 vectorFieldSample)
     for (int i=0; i<int(licParams.x); ++i)
     {
         licdir = 2.0*step.rgb - 1.0;
+		//licdir = step.rgb;
         kernelOffset += licKernel.x;
         illum += singleLICstep(licdir, newPos, step, 
                                kernelOffset, logEyeDist);

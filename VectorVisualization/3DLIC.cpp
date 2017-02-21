@@ -334,23 +334,23 @@ void keyboard(unsigned char key, int x, int y)
 		updateScene = true;
 		break;
 	case 'a': // LIC stepSize
-		licParams.stepSizeLIC += 0.0005f;
+		licParams.stepSizeLIC *= 2.0f; // += 0.05f
 		updateHUD();
 		updateScene = true;
 		break;
 	case 'z':
-		licParams.stepSizeLIC -= 0.0005f;
+		licParams.stepSizeLIC *= 0.5f; // -= 0.05f
 		if (licParams.stepSizeLIC < 0.0005f)
 			licParams.stepSizeLIC = 0.0005f;
 		updateHUD(); updateScene = true;
 		break;
 	case 'h': // frequency scaling
-		licParams.freqScale += 0.5f;
+		licParams.freqScale += 0.2f; //0.5f
 		updateHUD();
 		updateScene = true;
 		break;
 	case 'n':
-		licParams.freqScale -= 0.5f;
+		licParams.freqScale -= 0.2f; //0.5f
 		if (licParams.freqScale < 0.5f)
 			licParams.freqScale = 0.5f;
 		updateHUD();
@@ -672,6 +672,14 @@ void init(void)
 	noise.createTexture("Noise_Tex", GL_TEXTURE3_ARB);
 	std::cout << std::endl;
 
+	// load secondary scalar volume data
+	if (!scalar.loadData("..\\data\\outputraw\\out_64_0_temperature.dat"))
+	{
+		std::cerr << "Could not load data ..." << std::endl;
+		exit(1);
+	}
+	scalar.createTexture("Scalar_Tex", GL_TEXTURE4_ARB);
+
 	// load LIC filter kernel
 	if (!licFilter.loadData(arguments.getLicFilterFileName()))
 	{
@@ -735,6 +743,7 @@ void init(void)
 	renderer.setLICFilter(&licFilter);
 
 	renderer.setDataTex(vd.getTextureRef());
+	renderer.setScalarTex(scalar.getTextureRef());
 	renderer.setNoiseTex(noise.getTextureRef());
 	renderer.setTFrgbTex(tfEdit.getTextureRGB());
 	renderer.setTFalphaOpacTex(tfEdit.getTextureAlphaOpac());

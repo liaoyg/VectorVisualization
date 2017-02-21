@@ -48,10 +48,14 @@ void main(void)
             */
 
             // lookup in transfer function
-            tfData = texture1D(transferRGBASampler, vectorData.a);
+			vec4 scalarData = texture3D(scalarSampler, pos);
+            tfData = texture1D(transferRGBASampler, scalarData.r);
+            //tfData = texture1D(transferRGBASampler, vectorData.a);
+			//tfData = texture1D(transferRGBASampler, length(vectorData));
+			//tfData = texture1D(transferRGBASampler, vectorData.x);
 
             // compute lic only if sample is visible
-            if (tfData.a > 0.05)
+            if (scalarData.r > 0.0005)
             {
                 // compute the LIC integral
                 illum = computeLIC(pos, vectorData);
@@ -71,7 +75,7 @@ void main(void)
                 // -- standard LIC --
                 src = illumLIC(illum.a, tfData);
 #endif
-
+				
                 // perform blending
                 src.rgb *= src.a;
                 dest = clamp((1.0-dest.a)*src + dest, 0.0, 1.0);

@@ -19,6 +19,7 @@ ClipPlane *currentClipPlane;
 Transform light;
 
 VectorDataSet vd;
+VolumeDataSet scalar; // load second dimension scalar data
 NoiseDataSet noise;
 Illumination illum;
 LICFilter licFilter;
