@@ -48,14 +48,16 @@ void main(void)
             */
 
             // lookup in transfer function
-			vec4 scalarData = texture3D(scalarSampler, pos);
-            tfData = texture1D(transferRGBASampler, scalarData.r);
-            //tfData = texture1D(transferRGBASampler, vectorData.a);
+			// use secondary scalar data to map color value
+			vec4 scalarData = texture3D(scalarSampler, pos); 
+            //tfData = texture1D(transferRGBASampler, scalarData.r);
+            tfData = texture1D(transferRGBASampler, vectorData.r);
 			//tfData = texture1D(transferRGBASampler, length(vectorData));
 			//tfData = texture1D(transferRGBASampler, vectorData.x);
 
             // compute lic only if sample is visible
-            if (scalarData.r > 0.0005)
+			//if (tfData.a > 0.05)
+            if (scalarData.g > 0.01  && scalarData.g < 0.15)
             {
                 // compute the LIC integral
                 illum = computeLIC(pos, vectorData);

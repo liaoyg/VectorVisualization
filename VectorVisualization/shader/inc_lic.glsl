@@ -63,8 +63,8 @@ vec4 freqSamplingGrad(in vec3 pos, out float logEyeDist)
     //vec3 objPos = pos * scaleVolInv.xyz;
 
     //vec4 tmp = noiseLookupGrad(pos, gradient.z, logEyeDist);
-    //return texture3D(noiseSampler, pos);
-    return noiseLookupGrad(pos, gradient.z, logEyeDist);
+    return texture3D(noiseSampler, pos);
+    //return noiseLookupGrad(pos, gradient.z, logEyeDist);
 }
 
 
@@ -72,8 +72,8 @@ float freqSampling(in vec3 pos, out float logEyeDist)
 {
     //vec3 objPos = pos * scaleVolInv.xyz;
 
-    //return texture3D(noiseSampler, pos).a;
-    return noiseLookup(pos, gradient.z, logEyeDist);
+    return texture3D(noiseSampler, pos*gradient.z).a;
+    //return noiseLookup(pos, gradient.z, logEyeDist);
 }
 
 

@@ -557,8 +557,8 @@ void mouseMotionInteract(int x, int y)
 	if (mouseBtnDown)
 	{
 		// change to low res mode immediately
-		renderer.enableLowRes(true);
-		requestHighRes = false;
+		//renderer.enableLowRes(true);
+		//requestHighRes = false;
 		mouseBtnDown = false;
 
 		updateHUD();

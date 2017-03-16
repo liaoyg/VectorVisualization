@@ -83,7 +83,7 @@ enum MouseMode
 struct LICParams
 {
 	LICParams(void) : stepSizeVol(1.0f / 128.0f), gradientScale(30.0f),
-		illumScale(1.0f), freqScale(5.0f),
+		illumScale(1.0f), freqScale(1.0f),
 		numIterations(255),
 		stepsForward(32), stepsBackward(32),
 		stepSizeLIC(0.01f)
