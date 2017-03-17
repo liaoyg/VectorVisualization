@@ -75,7 +75,7 @@ Renderer::~Renderer(void)
 
 void Renderer::init(char *defines)
 {
-	float lightPos[] = { 2.0f, -10.0, 10.0f, 0.0f };
+	float lightPos[] = { 0.0f, 0.0, 0.0f, 0.0f };
 
 	_quadric = gluNewQuadric();
 	gluQuadricDrawStyle(_quadric, GLU_FILL);
