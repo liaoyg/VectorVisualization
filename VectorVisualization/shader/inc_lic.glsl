@@ -73,9 +73,10 @@ float freqSampling(in vec3 pos, out float logEyeDist)
     //vec3 objPos = pos * scaleVolInv.xyz;
 
 	//Use scalar data to decide noise range to be integrated
-	vec4 scalarData = texture3D(scalarSampler, pos);
-
-	if (scalarData.g > 0.01  && scalarData.g < 0.11)
+	vec4 vectorData = texture3D(volumeSampler, pos);
+	//float scala = length(vectorData.xyz);
+	
+	if (vectorData.a > 0.2  && vectorData.a < 0.4)
 	{
 		//return texture3D(noiseSampler, pos).a
 		return texture3D(noiseSampler, pos*gradient.z).a;
@@ -89,13 +90,13 @@ float freqSampling(in vec3 pos, out float logEyeDist)
 #ifdef USE_NOISE_GRADIENTS
 vec4 singleLICstep(in vec3 licdir, in out vec3 newPos,
                    in out vec4 step, in float kernelOffset,
-                   in out float logEyeDist)
+                   in out float logEyeDist, in float dir)
 {
     vec4 noise;
 #else
 float singleLICstep(in vec3 licdir, in out vec3 newPos,
                    in out vec4 step, in float kernelOffset,
-                   in out float logEyeDist)
+                   in out float logEyeDist, in float dir)
 {
     float noise;
 #endif
@@ -111,12 +112,15 @@ float singleLICstep(in vec3 licdir, in out vec3 newPos,
     vec3 Pos2 = newPos + licdir;
 	vec4 step2 = texture3D(volumeSampler, Pos2);
 	vec3 licdir2 = 2.0*step2.rgb - 1.0;
+	licdir2 *= dir;
 	//licdir2 = step2.rgb;
-	//licdir2 *= step2.a;
+#ifdef SPEED_OF_FLOW
+    licdir2 *= step.a;
+#endif
 	licdir2 *= licParams.z * (logEyeDist*0.5 + 0.3);
 	//Pos2 += 0.5 * licdir2;
-	//newPos += 0.5 * (licdir + licdir2);
-	newPos += 0.3 * licdir;
+	newPos += 0.5 * (licdir + licdir2);
+	//newPos += 0.3 * licdir;
 
     step = texture3D(volumeSampler, newPos);
 #ifdef TIME_DEPENDENT
@@ -164,6 +168,7 @@ vec4 computeLIC(in vec3 pos, in vec4 vectorFieldSample)
     // weight sample with lic kernel at position 0
     illum *= texture1D(licKernelSampler, 0.5).r;
     
+	float dir = -1;
     // backward LIC
     vec3 newPos = pos;
     vec4 step = vectorFieldSample;
@@ -173,10 +178,11 @@ vec4 computeLIC(in vec3 pos, in vec4 vectorFieldSample)
 		//licdir = step.rgb;
         kernelOffset -= licKernel.y;
         illum += singleLICstep(licdir, newPos, step, 
-                               kernelOffset, logEyeDist);
+                               kernelOffset, logEyeDist, dir);
     }
 
     // forward LIC
+	dir = 1;
     newPos = pos;
     step = vectorFieldSample;
     kernelOffset = 0.5;
@@ -186,7 +192,7 @@ vec4 computeLIC(in vec3 pos, in vec4 vectorFieldSample)
 		//licdir = step.rgb;
         kernelOffset += licKernel.x;
         illum += singleLICstep(licdir, newPos, step, 
-                               kernelOffset, logEyeDist);
+                               kernelOffset, logEyeDist, dir);
     }
     
     return vec4(illum);

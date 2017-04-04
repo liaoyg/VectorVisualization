@@ -261,7 +261,6 @@ void VectorDataSet::createTexture(const char *texName,
 
 		paddedData = fillTexDataChar();
 	}
-
 	_tex.format = _texIntFmt;
 
 	glBindTexture(GL_TEXTURE_3D, _tex.id);
@@ -478,9 +477,9 @@ void* VectorDataSet::fillTexDataFloat(void)
 					if (len < EPS)
 					{
 						len = 0.0f;
-						padded[4 * adrPacked] = 0.5f;
-						padded[4 * adrPacked + 1] = 0.5f;
-						padded[4 * adrPacked + 2] = 0.5f;
+						padded[4 * adrPacked] = 0.005f;
+						padded[4 * adrPacked + 1] = 0.005f;
+						padded[4 * adrPacked + 2] = 0.005f;
 					}
 					else
 					{
@@ -517,18 +516,20 @@ void* VectorDataSet::fillTexDataFloat(void)
 	}
 
 	// adapt the range of the magnitude to [0,1]
-	for (int z = 0; z<_vd->size[2]; ++z)
-		for (int y = 0; y<_vd->size[1]; ++y)
-			for (int x = 0; x<_vd->size[0]; ++x)
-			{
-				adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
-				len = padded[4 * adrPacked + 3] / maxLen;
-				padded[4 * adrPacked + 3] = (len > 1.0f) ? 1.0f : ((len < 0.0f) ? 0.0f : len);
-			}
+	//for (int z = 0; z<_vd->size[2]; ++z)
+	//	for (int y = 0; y<_vd->size[1]; ++y)
+	//		for (int x = 0; x<_vd->size[0]; ++x)
+	//		{
+	//			adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
+	//			len = padded[4 * adrPacked + 3] / maxLen;
+	//			padded[4 * adrPacked + 3] = (len > 1.0f) ? 1.0f : ((len < 0.0f) ? 0.0f : len);
+	//		}
 
 	return padded;
 }
 
+// make tecture data between two key frame
+// this is for creating texture data for animation
 void* VectorDataSet::fillTexDataFloatInterp()
 {
 	int size = _vd->texSize[0] * _vd->texSize[1] * _vd->texSize[2];

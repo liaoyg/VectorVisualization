@@ -408,12 +408,12 @@ void keyboard(unsigned char key, int x, int y)
 		renderer.loadGLSLShader("#define ILLUM_GRADIENT");
 		updateScene = true;
 		break;
-		/*
-		case '9':
+		
+	case '6':
 		renderer.loadGLSLShader("#define SPEED_OF_FLOW");
 		updateScene = true;
 		break;
-		*/
+		
 
 	case ' ':
 		updateSceneCont = !updateSceneCont;
