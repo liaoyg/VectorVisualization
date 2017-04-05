@@ -87,6 +87,12 @@
     <ClCompile Include="timer.cpp">
       <Filter>Source Files\tools</Filter>
     </ClCompile>
+    <ClCompile Include="VolumeBuffer.cpp">
+      <Filter>Source Files\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="VolumeTex.cpp">
+      <Filter>Source Files\graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="types.h">
@@ -149,6 +155,12 @@
     <ClInclude Include="timer.h">
       <Filter>Source Files\tools</Filter>
     </ClInclude>
+    <ClInclude Include="VolumeBuffer.h">
+      <Filter>Source Files\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="VolumeTex.h">
+      <Filter>Source Files\graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\background_fragment.glsl">
@@ -182,6 +194,12 @@
       <Filter>Source Files\shaders</Filter>
     </None>
     <None Include="shader\volic_vertex.glsl">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shader\lic3d_volume_fragment.glsl">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shader\raycast_lic3d_fragment.glsl">
       <Filter>Source Files\shaders</Filter>
     </None>
   </ItemGroup>

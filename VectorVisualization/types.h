@@ -66,6 +66,7 @@ enum RenderTechnique
 	VOLIC_RAYCAST,
 	VOLIC_SLICING,
 	//VOLIC_DEPTH_PEEL_MULTI
+	VOLIC_LICVOLUME,
 };
 
 enum MouseMode

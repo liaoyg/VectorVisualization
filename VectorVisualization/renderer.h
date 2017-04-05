@@ -20,6 +20,7 @@
 #include "transform.h"
 #include "camera.h"
 #include "types.h"
+#include "VolumeBuffer.h"
 
 
 
@@ -109,6 +110,9 @@ public:
 	// update slicing parameter
 	void updateSlices(void);
 
+	// update3D LIC Volume
+	void updateLICVolume(void);
+
 protected:
 	void createFBO(void);
 	// adapt framebuffer objects to new resolution
@@ -139,6 +143,12 @@ protected:
 
 	// fills the hole in the clipped cube
 	void drawClippedPolygon(void);
+
+	// Using FBO calculate 3D LIC value and store them into a 3D Texture
+	void renderLICVolume(void);
+
+	// Using Volume Rendering to render LIC 3D volume
+	void raycastLICVolume(void);
 
 	// draw a screen filling quad and display FBO content 
 	// composited with a background color
@@ -203,6 +213,9 @@ private:
 	// view aligned slicing 
 	ViewSlicing _slices;
 
+	// 3D LIC Volume Buffer
+	VolumeBuffer * _licvolumebuffer;
+
 	// GLSL shaders
 	GLSLShader _bgShader;
 
@@ -210,6 +223,8 @@ private:
 	GLSLShader _sliceShader;
 	GLSLShader _sliceBlendShader;
 	GLSLShader _volumeShader;
+	GLSLShader _volumeRenderShader;
+	GLSLShader _licRaycastShader;
 
 	GLSLShader _phongShader;
 
@@ -219,6 +234,8 @@ private:
 	GLSLParamsLIC _paramSlice;
 	GLSLParamsLIC _paramSliceBlend;
 	GLSLParamsLIC _paramVolume;
+	GLSLParamsLIC _paramLICVolume;
+	GLSLParamsLIC _paramLicRaycast;
 
 
 	// Textures

@@ -135,6 +135,8 @@
     <ClCompile Include="trackball.cpp" />
     <ClCompile Include="transferEdit.cpp" />
     <ClCompile Include="transform.cpp" />
+    <ClCompile Include="VolumeBuffer.cpp" />
+    <ClCompile Include="VolumeTex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="3DLIC.h" />
@@ -157,6 +159,8 @@
     <ClInclude Include="transferEdit.h" />
     <ClInclude Include="transform.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="VolumeBuffer.h" />
+    <ClInclude Include="VolumeTex.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\background_fragment.glsl" />
@@ -166,8 +170,10 @@
     <None Include="shader\lic3d_fragment.glsl" />
     <None Include="shader\lic3d_slicingblend_fragment.glsl" />
     <None Include="shader\lic3d_slicing_fragment.glsl" />
+    <None Include="shader\lic3d_volume_fragment.glsl" />
     <None Include="shader\phong_fragment.glsl" />
     <None Include="shader\phong_vertex.glsl" />
+    <None Include="shader\raycast_lic3d_fragment.glsl" />
     <None Include="shader\vectorfield_fragment.glsl" />
     <None Include="shader\volic_vertex.glsl" />
   </ItemGroup>

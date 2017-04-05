@@ -42,6 +42,7 @@ _debug(false)
 	_mcOffsetTex = new Texture;
 
 	_nearClipPlane.setActive(true);
+
 }
 
 
@@ -84,6 +85,10 @@ void Renderer::init(char *defines)
 
 	createFBO();
 	CHECK_FOR_OGL_ERROR();
+
+	//init volume buffer
+	// A 3D texture buffer to store LIC value according to the vectore field
+	_licvolumebuffer = new VolumeBuffer(GL_RGBA16F_ARB, 512, 512, 512, 1);
 
 	loadGLSLShader(defines);
 	CHECK_FOR_OGL_ERROR();
@@ -175,6 +180,9 @@ void Renderer::render(bool update)
 			break;
 		case VOLIC_SLICING:
 			sliceVolume();
+			break;
+		case VOLIC_LICVOLUME:
+			raycastLICVolume();
 			break;
 		default:
 			std::cerr << "Renderer:  Unknown render mode!" << std::endl;
@@ -767,6 +775,16 @@ void Renderer::loadGLSLShader(char *defines)
 		"shader/lic3d_slicingblend_fragment.glsl"
 	};
 
+	char *licVolumeFragShader[] = { "shader/inc_header.glsl",
+		"shader/inc_lic.glsl",
+		"shader/lic3d_volume_fragment.glsl",
+	};
+
+	char *raycastLICVolumeFragShader[] = { 
+		"shader/inc_header.glsl",
+		"shader/inc_illum.glsl",
+		"shader/raycast_lic3d_fragment.glsl", };
+
 	char *phongVertexShader[] = { "shader/phong_vertex.glsl" };
 	char *phongFragmentShader[] = { "shader/phong_fragment.glsl" };
 
@@ -829,6 +847,23 @@ void Renderer::loadGLSLShader(char *defines)
 			<< "for Phong Shader." << std::endl;
 	}
 	_paramRaycast.getMemoryLocations(_raycastShader.getProgramObj(), _debug);
+
+	if (!_volumeRenderShader.loadShader(1, reinterpret_cast<char**>(vertexShader),
+		3, reinterpret_cast<char**>(licVolumeFragShader),
+		defines))
+	{
+		std::cerr << "Renderer:  Error loading Vertex and Fragment Program "
+			<< "for volumeRenderShader Shader." << std::endl;
+	}
+	_paramLICVolume.getMemoryLocations(_volumeRenderShader.getProgramObj(), _debug);
+	if (!_licRaycastShader.loadShader(1, reinterpret_cast<char**>(vertexShader),
+		3, reinterpret_cast<char**>(raycastLICVolumeFragShader),
+		defines))
+	{
+		std::cerr << "Renderer:  Error loading Vertex and Fragment Program "
+			<< "for raycastLICVolumeFragShader Shader." << std::endl;
+	}
+	_paramLicRaycast.getMemoryLocations(_licRaycastShader.getProgramObj(), _debug);
 
 
 	CHECK_FOR_OGL_ERROR();
@@ -917,6 +952,11 @@ void Renderer::setRenderVolTextures(GLSLParamsLIC *param)
 	{
 		glUniform1iARB(param->volumeSampler, _dataTex->texUnit - GL_TEXTURE0_ARB);
 		_dataTex->bind();
+	}
+	if (param->licVolumeSampler > -1)
+	{
+		glUniform1iARB(param->licVolumeSampler, _licvolumebuffer->getCurrentLayer()->texUnit - GL_TEXTURE0_ARB);
+		_licvolumebuffer->getCurrentLayer()->bind();
 	}
 	if (param->scalarSampler > -1)
 	{
@@ -1211,6 +1251,86 @@ void Renderer::drawClippedPolygon(void)
 	}
 }
 
+void Renderer::renderLICVolume(void)
+{
+	int oldViewport[4];
+	float color[4];
+	int depth = _licvolumebuffer->getDepth();
+	int width = _licvolumebuffer->getWidth();
+	int height = _licvolumebuffer->getHeight();
+	_licvolumebuffer->bind();
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	//glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+
+	glGetIntegerv(GL_VIEWPORT, oldViewport);
+	glViewport(0, 0, width, height);
+	glDisable(GL_DEPTH_TEST);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+
+	glGetFloatv(GL_COLOR_CLEAR_VALUE, color);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+
+	_volumeRenderShader.enableShader();
+
+	setRenderVolParams(&_paramLICVolume);
+	setRenderVolTextures(&_paramLICVolume);
+
+	
+	
+	for (int z = 0; z < depth; z++)
+	{
+		_licvolumebuffer->attachLayer(0, z);
+		//render volume to 3D Texture
+		_licvolumebuffer->drawSlice((z + 0.5f) / (float)depth);
+	}
+	_volumeRenderShader.disableShader();
+	
+	// restore old clear color
+	glClearColor(color[0], color[1], color[2], color[3]);
+	
+	glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]);
+	_licvolumebuffer->unbind();
+	
+}
+
+void Renderer::updateLICVolume(void)
+{
+	renderLICVolume();
+}
+
+void Renderer::raycastLICVolume(void)
+{
+	_licRaycastShader.enableShader();
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	//glDisable(GL_BLEND);
+	glEnable(GL_BLEND);
+
+	setRenderVolParams(&_paramLicRaycast);
+	setRenderVolTextures(&_paramLicRaycast);
+
+	drawCubeFaces();
+	drawClippedPolygon();
+
+	CHECK_FOR_OGL_ERROR();
+
+
+	_dataTex->unbind();
+	_tfRGBTex->unbind();
+	_tfAlphaOpacTex->unbind();
+
+	glDisable(GL_CULL_FACE);
+}
 
 void Renderer::renderBackground(void)
 {

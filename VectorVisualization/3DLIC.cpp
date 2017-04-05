@@ -135,8 +135,8 @@ void idle(void)
 	//vd.getVolumeData()->newData = vd.getVolumeData()->dataSets[vd.NextTimeStep()];
 
 	//vd.createTexture("VectorData_Tex", GL_TEXTURE2_ARB, true);
-	vd.createTextureIterp("VectorData_Tex", GL_TEXTURE2_ARB, true);
-	vd.checkInterpolateStage();
+	//vd.createTextureIterp("VectorData_Tex", GL_TEXTURE2_ARB, true);
+	//vd.checkInterpolateStage();
 
 	//renderer.setDataTex(vd.getTextureSetRef(idx));
 
@@ -217,6 +217,9 @@ void updateHUD(bool forceUpdate)
 		break;
 	case VOLIC_SLICING:
 		snprintf(technique, 30, "Slicing    ");
+		break;
+	case VOLIC_LICVOLUME:
+		snprintf(technique, 30, "LIC Volume    ");
 		break;
 	}
 
@@ -380,6 +383,11 @@ void keyboard(unsigned char key, int x, int y)
 		updateHUD();
 		updateScene = true;
 		break;
+		// update 3D Lic calculation
+	case 'u':
+		renderer.updateLICVolume();
+		updateScene = true;
+		break;
 
 		// clip planes
 	case '1':
@@ -425,6 +433,8 @@ void keyboard(unsigned char key, int x, int y)
 	default:
 		break;
 	}
+	if (updateScene && renderTechnique == VOLIC_LICVOLUME)
+		renderer.updateLICVolume();
 
 	if (updateScene && renderTechnique == VOLIC_SLICING)
 		renderer.updateSlices();
@@ -444,6 +454,10 @@ void keyboardSpecial(int key, int x, int y)
 	case GLUT_KEY_F3:
 		renderTechnique = VOLIC_SLICING;
 		renderer.updateSlices();
+		break;
+	case GLUT_KEY_F4:
+		renderTechnique = VOLIC_LICVOLUME;
+		renderer.updateLICVolume();
 		break;
 	}
 	renderer.setTechnique(renderTechnique);
@@ -664,7 +678,9 @@ void init(void)
 	vd.getVolumeData()->newData = vd.getVolumeData()->dataSets[vd.NextTimeStep()];
 	//vd.createTextures("VectorData_Tex", vd.getVolumeData()->dataSets.size(), GL_TEXTURE2_ARB, true);
 	vd.setInterpolateSize(100);
-	vd.createTexture("VectorData_Tex", GL_TEXTURE2_ARB, true);
+	//vd.createTexture("VectorData_Tex", GL_TEXTURE2_ARB, true);
+	vd.createTextureIterp("VectorData_Tex", GL_TEXTURE2_ARB, true);
+	vd.checkInterpolateStage();
 
 	// load noise data
 	noise.loadData(arguments.getNoiseFileName());

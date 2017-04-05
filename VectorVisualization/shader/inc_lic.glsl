@@ -76,7 +76,7 @@ float freqSampling(in vec3 pos, out float logEyeDist)
 	vec4 vectorData = texture3D(volumeSampler, pos);
 	//float scala = length(vectorData.xyz);
 	
-	if (vectorData.a > 0.2  && vectorData.a < 0.4)
+	if (vectorData.a > 0.3  && vectorData.a < 0.6)
 	{
 		//return texture3D(noiseSampler, pos).a
 		return texture3D(noiseSampler, pos*gradient.z).a;
