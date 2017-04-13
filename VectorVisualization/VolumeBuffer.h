@@ -15,15 +15,28 @@ public:
 	void attachLayer(int layer, int zSlice);
 	void attachTexture(GLenum texTarget, GLenum attachment, GLuint texId, int mipLevel, int zSlice);
 	void drawSlice(float z);
+	void restoreOldLayer();
 
-	Texture* getCurrentLayer() { return &(_tex[_layer]); }
+	Texture* getCurrentLayer() { return &(_tex[0]); }
+	Texture* getOldLayer() { return &(_tex[1]); }
 	int getDepth() { return _depth; }
 	int getWidth() { return _width; }
 	int getHeight() { return _height; }
+
+	void setInterpolation(int size) {
+		_interpSize = size;
+	}
+
+	bool isAnimation() { return animationFlag; }
+	void animationOn() { animationFlag = true; }
 private:
 	int _width, _height, _depth;
 	int _maxlayers;
 	int _layer;
+
+	bool animationFlag;
+	int _interpSize;
+	int _curIntepStep;
 
 	GLuint _frambufferId;
 	Texture * _tex;

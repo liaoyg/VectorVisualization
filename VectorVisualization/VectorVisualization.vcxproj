@@ -177,6 +177,9 @@
     <None Include="shader\vectorfield_fragment.glsl" />
     <None Include="shader\volic_vertex.glsl" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="README.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

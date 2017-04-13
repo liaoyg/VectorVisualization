@@ -47,6 +47,7 @@ bool useIdle = true;
 double lowResTimer = 0.0;
 
 RenderTechnique renderTechnique = VOLIC_VOLUME;
+bool animationMode = false;
 MouseMode mouseMode;
 LICParams licParams;
 

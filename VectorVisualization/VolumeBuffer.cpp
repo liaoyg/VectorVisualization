@@ -3,7 +3,8 @@
 
 
 VolumeBuffer::VolumeBuffer(GLint format, int width, int height, int depth, int layers)
-	:_width(width), _height(height), _depth(depth), _maxlayers(layers), _layer(0)
+	:_width(width), _height(height), _depth(depth), _maxlayers(layers), _layer(0),
+	_interpSize(0), _curIntepStep(0), animationFlag(false)
 {
 	glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC)wglGetProcAddress("glGenFramebuffersEXT");
 	_frambufferId = 0;
@@ -20,7 +21,19 @@ VolumeBuffer::VolumeBuffer(GLint format, int width, int height, int depth, int l
 
 VolumeBuffer::~VolumeBuffer()
 {
-	glDeleteFramebuffersEXT(1, &_frambufferId);
+	if (_frambufferId && glFramebufferTexture3DEXT && glBindFramebufferEXT
+		&& glDeleteFramebuffersEXT && glDeleteRenderbuffersEXT)
+	{
+		glFramebufferTexture3DEXT(GL_FRAMEBUFFER_EXT,
+			GL_COLOR_ATTACHMENT0_EXT,
+			GL_TEXTURE_RECTANGLE_ARB,
+			0, 0, 0);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+		glDeleteFramebuffersEXT(1, &_frambufferId);
+	}
+	//if(_frambufferId)
+	//glDeleteFramebuffersEXT(1, &_frambufferId);
 	for (int i = 0; i<_maxlayers; i++) {
 		glDeleteTextures(1, &_tex[i].id);
 	}
@@ -41,6 +54,15 @@ GLuint VolumeBuffer::create3dTexture(GLint internalformat, int w, int h, int d)
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, mode);
 	glTexImage3D(GL_TEXTURE_3D, 0, internalformat, w, h, d, 0, GL_RGBA, GL_FLOAT, 0);
 	return tex;
+}
+
+void VolumeBuffer::restoreOldLayer()
+{
+	if (_tex[0].id > 0)
+	{
+		glBindTexture(GL_TEXTURE_3D, _tex[0].id);
+		glCopyTexSubImage3D(_tex[1].id, 0, 0, 0, 0, 0, 0, _tex[0].width, _tex[0].height);
+	}
 }
 
 void VolumeBuffer::bind()

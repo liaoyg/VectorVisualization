@@ -135,8 +135,11 @@ void idle(void)
 	//vd.getVolumeData()->newData = vd.getVolumeData()->dataSets[vd.NextTimeStep()];
 
 	//vd.createTexture("VectorData_Tex", GL_TEXTURE2_ARB, true);
-	//vd.createTextureIterp("VectorData_Tex", GL_TEXTURE2_ARB, true);
-	//vd.checkInterpolateStage();
+	if(animationMode && (renderTechnique == VOLIC_SLICING || renderTechnique == VOLIC_RAYCAST || renderTechnique == VOLIC_LICVOLUME))
+		vd.createTextureIterp("VectorData_Tex", GL_TEXTURE2_ARB, true);
+	if(animationMode && renderTechnique == VOLIC_LICVOLUME)
+		renderer.updateLICVolume();
+	vd.checkInterpolateStage();
 
 	//renderer.setDataTex(vd.getTextureSetRef(idx));
 
@@ -421,6 +424,10 @@ void keyboard(unsigned char key, int x, int y)
 		renderer.loadGLSLShader("#define SPEED_OF_FLOW");
 		updateScene = true;
 		break;
+	case '.':
+		renderer.loadGLSLShader("#define VOLUME_ANIMATION");
+		updateScene = true;
+		break;
 		
 
 	case ' ':
@@ -458,6 +465,10 @@ void keyboardSpecial(int key, int x, int y)
 	case GLUT_KEY_F4:
 		renderTechnique = VOLIC_LICVOLUME;
 		renderer.updateLICVolume();
+		break;
+	case GLUT_KEY_F5:
+		animationMode = !animationMode;
+		//renderer.updateLICVolume();
 		break;
 	}
 	renderer.setTechnique(renderTechnique);
@@ -677,7 +688,8 @@ void init(void)
 	vd.getVolumeData()->data = vd.getVolumeData()->dataSets[vd.getCurTimeStep()];
 	vd.getVolumeData()->newData = vd.getVolumeData()->dataSets[vd.NextTimeStep()];
 	//vd.createTextures("VectorData_Tex", vd.getVolumeData()->dataSets.size(), GL_TEXTURE2_ARB, true);
-	vd.setInterpolateSize(100);
+	// Set Interpolation step size
+	vd.setInterpolateSize(20);
 	//vd.createTexture("VectorData_Tex", GL_TEXTURE2_ARB, true);
 	vd.createTextureIterp("VectorData_Tex", GL_TEXTURE2_ARB, true);
 	vd.checkInterpolateStage();

@@ -1,5 +1,6 @@
 
 uniform sampler3D licVolumeSampler;
+uniform sampler3D licVolumeSamplerOld;
 
 void main(void)
 {

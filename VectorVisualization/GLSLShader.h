@@ -89,6 +89,7 @@ struct GLSLParamsLIC
     GLint malloSpecSampler;
     GLint zoecklerSampler;
 	GLint licVolumeSampler;
+	GLint licVolumeSamplerOld;
 
     GLint imageFBOSampler;
 };

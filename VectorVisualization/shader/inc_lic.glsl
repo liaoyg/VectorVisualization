@@ -74,9 +74,11 @@ float freqSampling(in vec3 pos, out float logEyeDist)
 
 	//Use scalar data to decide noise range to be integrated
 	vec4 vectorData = texture3D(volumeSampler, pos);
+	vec4 scalarData = texture3D(scalarSampler, pos); 
 	//float scala = length(vectorData.xyz);
 	
-	if (vectorData.a > 0.3  && vectorData.a < 0.6)
+	//if (scalarData.r > 0  && scalarData.r < 0.8)
+	if (vectorData.a > 0.2  && vectorData.a < 0.8)
 	{
 		//return texture3D(noiseSampler, pos).a
 		return texture3D(noiseSampler, pos*gradient.z).a;

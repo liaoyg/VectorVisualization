@@ -88,7 +88,7 @@ void Renderer::init(char *defines)
 
 	//init volume buffer
 	// A 3D texture buffer to store LIC value according to the vectore field
-	_licvolumebuffer = new VolumeBuffer(GL_RGBA16F_ARB, 512, 512, 512, 1);
+	_licvolumebuffer = new VolumeBuffer(GL_RGBA16F_ARB, 512, 512, 512, 2);
 
 	loadGLSLShader(defines);
 	CHECK_FOR_OGL_ERROR();
@@ -957,6 +957,10 @@ void Renderer::setRenderVolTextures(GLSLParamsLIC *param)
 	{
 		glUniform1iARB(param->licVolumeSampler, _licvolumebuffer->getCurrentLayer()->texUnit - GL_TEXTURE0_ARB);
 		_licvolumebuffer->getCurrentLayer()->bind();
+	}if (param->licVolumeSamplerOld > -1)
+	{
+		glUniform1iARB(param->licVolumeSamplerOld, _licvolumebuffer->getOldLayer()->texUnit - GL_TEXTURE0_ARB);
+		_licvolumebuffer->getOldLayer()->bind();
 	}
 	if (param->scalarSampler > -1)
 	{
@@ -1258,6 +1262,11 @@ void Renderer::renderLICVolume(void)
 	int depth = _licvolumebuffer->getDepth();
 	int width = _licvolumebuffer->getWidth();
 	int height = _licvolumebuffer->getHeight();
+	GLint currentFBO = 0;
+
+	// store current framebuffer object
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &currentFBO);
+
 	_licvolumebuffer->bind();
 
 	glMatrixMode(GL_MODELVIEW);
@@ -1283,7 +1292,10 @@ void Renderer::renderLICVolume(void)
 	setRenderVolParams(&_paramLICVolume);
 	setRenderVolTextures(&_paramLICVolume);
 
-	
+	if (_licvolumebuffer->isAnimation())
+	{
+		_licvolumebuffer->restoreOldLayer();
+	}
 	
 	for (int z = 0; z < depth; z++)
 	{
@@ -1297,8 +1309,15 @@ void Renderer::renderLICVolume(void)
 	glClearColor(color[0], color[1], color[2], color[3]);
 	
 	glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]);
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
 	_licvolumebuffer->unbind();
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, currentFBO);
 	
+	CHECK_FRAMEBUFFER_STATUS();
 }
 
 void Renderer::updateLICVolume(void)

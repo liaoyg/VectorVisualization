@@ -67,6 +67,7 @@ enum RenderTechnique
 	VOLIC_SLICING,
 	//VOLIC_DEPTH_PEEL_MULTI
 	VOLIC_LICVOLUME,
+	VOLIC_VOLUMEANI,
 };
 
 enum MouseMode
