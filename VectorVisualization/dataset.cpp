@@ -203,8 +203,8 @@ void VectorDataSet::checkInterpolateStage()
 {
 	if (interpIndex >= InterpSize)
 	{
-		_vd->data = _vd->dataSets[getNextTimeStep()];
-		_vd->newData = _vd->dataSets[NextTimeStep()];
+		_vd->data = loadTimeStep(getNextTimeStep());
+		_vd->newData = loadTimeStep(NextTimeStep());
 		interpIndex = 0;
 	}
 }

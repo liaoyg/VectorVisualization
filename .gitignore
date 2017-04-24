@@ -244,3 +244,5 @@ ModelManifest.xml
 /data
 /kernel
 /noise
+/VectorVisualization/snapshotOut
+/VectorVisualization/video

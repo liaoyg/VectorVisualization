@@ -11,10 +11,13 @@
 //#include <GL/gl.h>
 //#include <GL/glu.h>
 
-#include <math.h>
-#include <iostream>
 #include <stdlib.h>
 #include <assert.h>
+#include <math.h>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
 #include "dataSet.h"
 #include "mmath.h"
 #include "imageUtils.h"
@@ -33,8 +36,8 @@ _dataTex(NULL), _noiseTex(NULL), _licKernelTex(NULL), _scalarTex(NULL),
 _lambda2Tex(NULL), _tfRGBTex(NULL), _tfAlphaOpacTex(NULL),
 _illumZoecklerTex(NULL), _illumMalloDiffTex(NULL),
 _illumMalloSpecTex(NULL), _quadric(NULL), _storeFrame(true),
-_lowRes(false), _wireframe(false), _screenShot(false), _licParams(NULL),
-_debug(false)
+_lowRes(false), _wireframe(false), _screenShot(false), _recording(false), _licParams(NULL),
+_debug(false), _isAnimationOn(false)
 
 {
 	_imgBufferTex0 = new Texture;
@@ -42,6 +45,9 @@ _debug(false)
 	_mcOffsetTex = new Texture;
 
 	_nearClipPlane.setActive(true);
+
+	_snapshotFileName = "snapshot.png";
+	frames = 0;
 
 }
 
@@ -192,6 +198,9 @@ void Renderer::render(bool update)
 
 		disableClipPlanes();
 
+		drawXYZAixs();
+		CHECK_FOR_OGL_ERROR();
+
 		// unbind fbo texture
 		if (_useFBO)
 		{
@@ -204,7 +213,7 @@ void Renderer::render(bool update)
 			CHECK_FOR_OGL_ERROR();
 		}
 		// read back content of framebuffer when not using FBOs
-		else if (_storeFrame || _screenShot)
+		else if (_storeFrame || _screenShot || _recording)
 		{
 			//glReadBuffer(GL_BACK);
 			glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -216,7 +225,7 @@ void Renderer::render(bool update)
 			CHECK_FOR_OGL_ERROR();
 		}
 	}
-	if (_useFBO || _storeFrame || _screenShot)
+	if (_useFBO || _storeFrame || _screenShot || _recording)
 		renderBackground();
 
 	GLSLShader::disableShader();
@@ -273,6 +282,8 @@ void Renderer::render(bool update)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 	CHECK_FOR_OGL_ERROR();
+
+	
 
 
 	// write depth values of the bounding box into the framebuffer
@@ -724,6 +735,47 @@ void Renderer::drawCubeFaces(void)
 	glEnd();
 }
 
+void Renderer::drawXYZAixs(void)
+{
+	int oldViewport[4];
+	glGetIntegerv(GL_VIEWPORT, oldViewport);
+	glViewport(1000, 100, 100, 100);
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	//gluPerspective(45.0f, 1.0f, 0.1f, 20.0f);
+	glTranslatef(0.0f, 0.0f, -_cam->getDistance());
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	//This really has to come from your camera....
+	//gluLookAt(10.0f, 10.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.1f, 0.0f);
+
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glEnable(GL_LINE_SMOOTH);
+	glLineWidth(1.5);
+	glBegin(GL_LINES);
+		// draw line for x axis
+		glColor3f(4.0, 0.0, 0.0);
+		glVertex3f(0.0, 0.0, 0.0);
+		glVertex3f(4.0, 0.0, 0.0);
+		// draw line for y axis
+		glColor3f(0.0, 4.0, 0.0);
+		glVertex3f(0.0, 0.0, 0.0);
+		glVertex3f(0.0, 4.0, 0.0);
+		// draw line for Z axis
+		glColor3f(0.0, 0.0, 4.0);
+		glVertex3f(0.0, 0.0, 0.0);
+		glVertex3f(0.0, 0.0, 4.0);
+	glEnd();
+
+	//Restore View
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]);
+}
 
 void Renderer::drawCubeWireframe(void)
 {
@@ -1064,6 +1116,7 @@ void Renderer::raycastVolume(void)
 	glDisable(GL_CULL_FACE);
 	if (!_storeFrame && !_useFBO)
 		glDisable(GL_BLEND);
+	_raycastShader.disableShader();
 }
 
 
@@ -1368,7 +1421,7 @@ void Renderer::renderBackground(void)
 	_bgShader.enableShader();
 
 
-	if (_screenShot)
+	if (_screenShot || _recording)
 	{
 		// render into second fbo texture
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, _framebuffer);
@@ -1420,8 +1473,9 @@ void Renderer::renderBackground(void)
 	glEnd();
 
 	_imgBufferTex0->unbind();
+	GLSLShader::disableShader();
 
-	if (_screenShot)
+	if (_screenShot || _recording)
 	{
 		// disable fbo texture
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,
@@ -1430,12 +1484,27 @@ void Renderer::renderBackground(void)
 			0, 0);
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
+		std::string animationFile = "snapshotOut\\";
+		auto t = std::time(nullptr);
+		auto tm = *std::localtime(&t);
+
+		std::stringstream ss;
+		ss << animationFile;
+		if (_isAnimationOn)
+			ss << frames << "_" << _snapshotFileName;
+		else 
+			ss << std::put_time(&tm, "%d-%m-%Y %H-%M-%S ") << _snapshotFileName;
+		auto str = ss.str();
+
 		// TODO: screenshot filename
-		saveTexture("screenshot.png", _imgBufferTex0, 4, 15, 255.0);
-		std::cout << "Screenshot written to \"" << "screenshot.png"
+		saveTexture(str.c_str(), _imgBufferTex0, 4, 15, 255.0);
+		std::cout << "Screenshot written to \"" << str
 			<< "\"." << std::endl;
 
-		_screenShot = false;
+		if(_screenShot)
+			_screenShot = false;
+		if (_recording)
+			frames++;
 	}
 
 	glDepthMask(GL_TRUE);

@@ -112,6 +112,7 @@ F5		switch animation mode
 8       the streamlines are illuminated according to Mallo et al.
 9       gradient-based illumination is used 
 r       forces a reload of the GLSL shaders (no illumination applied)
+R		switch record snapshot.
 
 t       toggles the visibility of the transfer function editor
 H       toggles the HUD

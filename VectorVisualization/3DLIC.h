@@ -31,6 +31,7 @@ int mousePosOld[2];
 // TODO: delete global variables
 float aspect = 1.0f;
 bool screenshot = false;
+bool recording = false;
 int w = -1;
 int h = -1;
 bool wire = false;
@@ -41,6 +42,7 @@ bool requestHighRes = false;
 bool sceneMoved = false;
 bool mouseBtnDown = false;
 bool lightVisible = false;
+bool coordinateVisible = false;
 
 bool useIdle = true;
 

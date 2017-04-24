@@ -262,6 +262,12 @@ void keyboard(unsigned char key, int x, int y)
 		renderer.screenshot();
 		updateScene = true;
 		break;
+	case 'R':
+		animationMode = true;
+		renderer.setAnimationFlag(animationMode);
+		renderer.switchRecording();
+		updateScene = true;
+		break;
 	case 'H':
 		hud.SetVisible(!hud.IsVisible());
 		break;
@@ -468,6 +474,11 @@ void keyboardSpecial(int key, int x, int y)
 		break;
 	case GLUT_KEY_F5:
 		animationMode = !animationMode;
+		renderer.setAnimationFlag(animationMode);
+		if(animationMode)
+			std::cout << "Playing animation!" << std::endl;
+		else
+			std::cout << "Stop animation!" << std::endl;
 		//renderer.updateLICVolume();
 		break;
 	}
@@ -678,18 +689,20 @@ void init(void)
 		std::cerr << "Could not load data ..." << std::endl;
 		exit(1);
 	}
-	for (int i = vd.getTimeStepBegin(); i <= vd.getTimeStepEnd(); i++)
-	{
-		void* datap = vd.loadTimeStep(vd.getCurTimeStep());
-		vd.getVolumeData()->dataSets.push_back(datap);
-		vd.getNextTimeStep();
-	}
+	//for (int i = vd.getTimeStepBegin(); i <= vd.getTimeStepEnd(); i++)
+	//{
+	//	void* datap = vd.loadTimeStep(vd.getCurTimeStep());
+	//	vd.getVolumeData()->dataSets.push_back(datap);
+	//	vd.getNextTimeStep();
+	//}
 	
-	vd.getVolumeData()->data = vd.getVolumeData()->dataSets[vd.getCurTimeStep()];
-	vd.getVolumeData()->newData = vd.getVolumeData()->dataSets[vd.NextTimeStep()];
+	//vd.getVolumeData()->data = vd.getVolumeData()->dataSets[vd.getCurTimeStep()];
+	//vd.getVolumeData()->newData = vd.getVolumeData()->dataSets[vd.NextTimeStep()];
+	vd.getVolumeData()->data = vd.loadTimeStep(vd.getCurTimeStep());
+	vd.getVolumeData()->newData = vd.loadTimeStep(vd.NextTimeStep());
 	//vd.createTextures("VectorData_Tex", vd.getVolumeData()->dataSets.size(), GL_TEXTURE2_ARB, true);
 	// Set Interpolation step size
-	vd.setInterpolateSize(20);
+	vd.setInterpolateSize(10);
 	//vd.createTexture("VectorData_Tex", GL_TEXTURE2_ARB, true);
 	vd.createTextureIterp("VectorData_Tex", GL_TEXTURE2_ARB, true);
 	vd.checkInterpolateStage();

@@ -78,15 +78,22 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>D:\Project\Visual Studio\VectorVisualization\VectorVisualization\freeglut\lib;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\glew-1.11.0\lib;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\lib;D:\Program Files %28x86%29\GnuWin32\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>freeglut.lib;glew32.lib;libpngd.lib;libpng.lib;zlibstat.lib;zlibstatd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>freeglut.lib;glew32.lib;glew32s.lib;libpngd.lib;libpng.lib;zlibstat.lib;zlibstatd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>D:\Project\Visual Studio\VectorVisualization\VectorVisualization\freeglut\include;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\glew-1.11.0\include;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\includes;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\includes\assimp;D:\Program Files %28x86%29\GnuWin32\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>D:\Project\Visual Studio\VectorVisualization\VectorVisualization\freeglut\lib\x64;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\glew-1.11.0\lib\Release\x64;D:\Project\Visual Studio\VectorVisualization\VectorVisualization\lib;D:\Program Files %28x86%29\GnuWin32\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>freeglut.lib;glew32.lib;libpng13d.lib;libpng13.lib;libpngd.lib;libpng.lib;libpng64d.lib;libpng64.lib;zlibstat.lib;zlibstatd.lib;zlib164.lib;zlib164d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LargeAddressAware>true</LargeAddressAware>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

@@ -21,6 +21,7 @@
 #include "camera.h"
 #include "types.h"
 #include "VolumeBuffer.h"
+#include <string>
 
 
 
@@ -64,7 +65,13 @@ public:
 	}
 
 	// toggle update scene flag
-	void enableFrameStore(bool enable) { _storeFrame = enable; }
+	void enableFrameStore(bool enable) { 
+		_storeFrame = enable; 
+		if (_storeFrame)
+			std::cout << "Begin store frame." << std::endl;
+		else
+			std::cout << "End store frame." << std::endl;
+	}
 	bool isFrameStoreEnable(void) { return _storeFrame; }
 
 	// enable FBO usage
@@ -91,6 +98,7 @@ public:
 
 	void setWireframe(bool enable) { _wireframe = enable; }
 	void screenshot(void) { _screenShot = true; }
+	void switchRecording(void) { _recording = !_recording; }
 
 	void setLICParams(LICParams *params) { _licParams = params; }
 	/*
@@ -106,6 +114,7 @@ public:
 	// load glsl shader from files
 	void loadGLSLShader(char *defines = NULL);
 	void drawCubeFaces(void);
+	void drawXYZAixs(void);
 
 	// update slicing parameter
 	void updateSlices(void);
@@ -113,6 +122,7 @@ public:
 	// update3D LIC Volume
 	void updateLICVolume(void);
 
+	void setAnimationFlag(bool flag) { _isAnimationOn = flag; }
 protected:
 	void createFBO(void);
 	// adapt framebuffer objects to new resolution
@@ -277,6 +287,10 @@ private:
 
 	bool _wireframe;
 	bool _screenShot;
+	bool _recording;
+	std::string _snapshotFileName;
+	bool _isAnimationOn;
+	int frames;
 
 
 	LICParams *_licParams;

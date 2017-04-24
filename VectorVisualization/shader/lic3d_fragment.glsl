@@ -57,7 +57,7 @@ void main(void)
 
             // compute lic only if sample is visible
 			//if (tfData.a > 0.05)
-            if (scalarData.g > 0.0001)
+            if (scalarData.g > -0.0001)
 			//if (scalarData.g > 0.01  && scalarData.g < 0.15)
             {
                 // compute the LIC integral
