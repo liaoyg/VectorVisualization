@@ -993,6 +993,12 @@ void Renderer::setRenderVolParams(GLSLParamsLIC *param)
 	if (param->numIterations > -1)
 		glUniform1iARB(param->numIterations, _licParams->numIterations);
 	CHECK_FOR_OGL_ERROR();
+
+	if (param->interpSize > -1)
+		glUniform1iARB(param->interpSize, _licParams->interpSize);
+	if (param->interpStep > -1)
+		glUniform1fARB(param->interpStep, float(_licParams->interpStep)/ _licParams->interpSize);
+	CHECK_FOR_OGL_ERROR();
 }
 
 
@@ -1345,10 +1351,7 @@ void Renderer::renderLICVolume(void)
 	setRenderVolParams(&_paramLICVolume);
 	setRenderVolTextures(&_paramLICVolume);
 
-	if (_licvolumebuffer->isAnimation())
-	{
-		_licvolumebuffer->restoreOldLayer();
-	}
+	CHECK_FOR_OGL_ERROR();
 	
 	for (int z = 0; z < depth; z++)
 	{
@@ -1375,7 +1378,13 @@ void Renderer::renderLICVolume(void)
 
 void Renderer::updateLICVolume(void)
 {
+	_licvolumebuffer->restoreOldLayer();
 	renderLICVolume();
+}
+
+void Renderer::restoreLICVolume(void)
+{
+	_licvolumebuffer->restoreOldLayer();
 }
 
 void Renderer::raycastLICVolume(void)

@@ -10,6 +10,9 @@
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include "texture.h"
 #include "illumination.h"
@@ -135,13 +138,25 @@ void idle(void)
 	//vd.getVolumeData()->newData = vd.getVolumeData()->dataSets[vd.NextTimeStep()];
 
 	//vd.createTexture("VectorData_Tex", GL_TEXTURE2_ARB, true);
-	if(animationMode && (renderTechnique == VOLIC_SLICING || renderTechnique == VOLIC_RAYCAST || renderTechnique == VOLIC_LICVOLUME))
+	if (animationMode && (renderTechnique == VOLIC_SLICING || renderTechnique == VOLIC_RAYCAST /*|| renderTechnique == VOLIC_LICVOLUME*/))
+	{
 		vd.createTextureIterp("VectorData_Tex", GL_TEXTURE2_ARB, true);
-	if(animationMode && renderTechnique == VOLIC_LICVOLUME)
-		renderer.updateLICVolume();
-	vd.checkInterpolateStage();
+		vd.checkInterpolateStage();
+	}
+	if (animationMode && renderTechnique == VOLIC_LICVOLUME)
+	{
+		licParams.interpStep++;
+		updateScene = true;
 
-	//renderer.setDataTex(vd.getTextureSetRef(idx));
+	}
+	if (licParams.interpStep == licParams.interpSize)
+	{
+		renderer.setDataTex(vd.getTextureSetRef(vd.getNextTimeStep()));
+		renderer.renderLICVolume();
+		licParams.interpStep = 0;
+	}
+	//int i = 0;
+	//renderer.setDataTex(vd.getTextureSetRef(vd.getNextTimeStep()));
 
 	//Update Render Animation source
 	renderer.setVolumeData(vd.getVolumeData());
@@ -394,7 +409,7 @@ void keyboard(unsigned char key, int x, int y)
 		break;
 		// update 3D Lic calculation
 	case 'u':
-		renderer.updateLICVolume();
+		//renderer.updateLICVolume();
 		updateScene = true;
 		break;
 
@@ -470,15 +485,21 @@ void keyboardSpecial(int key, int x, int y)
 		break;
 	case GLUT_KEY_F4:
 		renderTechnique = VOLIC_LICVOLUME;
-		renderer.updateLICVolume();
+		//renderer.updateLICVolume();
 		break;
 	case GLUT_KEY_F5:
 		animationMode = !animationMode;
 		renderer.setAnimationFlag(animationMode);
-		if(animationMode)
+		if (animationMode)
+		{
 			std::cout << "Playing animation!" << std::endl;
+			renderer.loadGLSLShader("#define VOLUME_ANIMATION");
+		}
 		else
+		{
 			std::cout << "Stop animation!" << std::endl;
+			renderer.loadGLSLShader();
+		}
 		//renderer.updateLICVolume();
 		break;
 	}
@@ -673,6 +694,36 @@ void initGL(void)
 	CHECK_FOR_OGL_ERROR();
 }
 
+void loadVecterData(VectorDataSet * vdd)
+{
+	wglMakeCurrent(dc, glrc_load);
+	std::deque<VolumeData*>& vds = vdd->getVolumeDataSet();
+	std::vector<Texture*> & vts = vdd->getTextureSet();
+	for (int i = vdd->getTimeStepBegin(); i <= vdd->getTimeStepEnd(); i++)
+	{
+		void* datap = vdd->loadTimeStep(i);
+		VolumeData * vdp = new VolumeData(*(vdd->getVolumeData()));
+		vdp->data = datap;	
+		if (!vds.empty())
+			vds.back()->newData = datap;
+		vds.push_back(vdp);
+		std::cout << "vector data set size: " << vds.size() << std::endl;
+	}
+	
+	//initial first volume
+	vdd->setVolumeDataIndex(0);
+
+	std::unique_lock<std::mutex> lck_load(mt_load);
+	load_volume_buffer = true;
+	cv_load.notify_one();
+	
+
+	for (int i =0; i < vds.size(); i++)
+	{
+		vts.push_back(vdd->createTextures(i, "LoadThread_Tex", GL_TEXTURE1_ARB, true));
+	}
+}
+
 
 void init(void)
 {
@@ -689,20 +740,22 @@ void init(void)
 		std::cerr << "Could not load data ..." << std::endl;
 		exit(1);
 	}
-	//for (int i = vd.getTimeStepBegin(); i <= vd.getTimeStepEnd(); i++)
-	//{
-	//	void* datap = vd.loadTimeStep(vd.getCurTimeStep());
-	//	vd.getVolumeData()->dataSets.push_back(datap);
-	//	vd.getNextTimeStep();
-	//}
+	std::thread load_thread(loadVecterData, &vd);
+	load_thread.join();
+
+	auto pred = []() {
+		return load_volume_buffer;
+	};
+	std::unique_lock<std::mutex> lck_load(mt_load);
+	while (!pred())
+		cv_load.wait(lck_load);
 	
-	//vd.getVolumeData()->data = vd.getVolumeData()->dataSets[vd.getCurTimeStep()];
-	//vd.getVolumeData()->newData = vd.getVolumeData()->dataSets[vd.NextTimeStep()];
-	vd.getVolumeData()->data = vd.loadTimeStep(vd.getCurTimeStep());
-	vd.getVolumeData()->newData = vd.loadTimeStep(vd.NextTimeStep());
+	std::cout << "start initil texture" << std::endl;
 	//vd.createTextures("VectorData_Tex", vd.getVolumeData()->dataSets.size(), GL_TEXTURE2_ARB, true);
 	// Set Interpolation step size
 	vd.setInterpolateSize(10);
+	licParams.interpSize = 10;
+
 	//vd.createTexture("VectorData_Tex", GL_TEXTURE2_ARB, true);
 	vd.createTextureIterp("VectorData_Tex", GL_TEXTURE2_ARB, true);
 	vd.checkInterpolateStage();
@@ -794,10 +847,33 @@ void init(void)
 
 	renderer.setLICParams(&licParams);
 
+	renderer.renderLICVolume();
+	renderer.updateLICVolume();
+	CHECK_FOR_OGL_ERROR();
 	renderer.updateLightPos();
 	renderer.updateSlices();
 }
 
+void initMultiThread(void)
+{
+	//Create Multi-Thread for loading and Texture generation
+	dc = wglGetCurrentDC();
+	glrc_main = wglCreateContext(dc);
+	glrc_load = wglCreateContext(dc);
+	BOOL error = wglShareLists(glrc_main, glrc_load);
+	if (error == FALSE)
+	{
+		DWORD errorCode = GetLastError();
+		LPVOID lpMsgBuf;
+		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
+		MessageBox(NULL, (LPCTSTR)lpMsgBuf, "Error", MB_OK | MB_ICONINFORMATION);
+		LocalFree(lpMsgBuf);
+		//Destroy the GL context and just use 1 GL context
+		wglDeleteContext(glrc_load);
+	}
+	wglMakeCurrent(dc, glrc_main);
+}
 
 int main(int argc, char **argv)
 {
@@ -829,8 +905,13 @@ int main(int argc, char **argv)
 		fprintf(stderr, "GLEW error");
 		return 1;
 	}
+
+	initMultiThread();
 	initGL();
 	init();
+
+	//std::thread load_thread(loadVecterData, &vd);
+	//load_thread.join();
 
 	glutMainLoop();
 

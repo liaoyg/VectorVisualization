@@ -2,6 +2,9 @@
 uniform sampler3D licVolumeSampler;
 uniform sampler3D licVolumeSamplerOld;
 
+uniform int interpSize;
+uniform float interpStep;
+
 void main(void)
 {
     bool outside = false;
@@ -22,6 +25,7 @@ void main(void)
 
     float scalarData;
     vec4 volumeData;
+	vec4 volumeDataOld;
 	vec4 vectorData;
 
     vec4 dest = vec4(0.0);
@@ -40,7 +44,15 @@ void main(void)
             // lookup scalar value
             vectorData = texture3D(volumeSampler, pos);
             volumeData = texture3D(licVolumeSampler, pos);
-			
+
+			volumeDataOld = texture3D(licVolumeSamplerOld, pos);
+
+			float intensity = volumeData.r;
+			intensity = volumeDataOld.r*(1-interpStep) + volumeData.r * interpStep;
+			//volumeData = volumeDataMix;
+			//if(volumeData == volumeDataOld)
+				//intensity = interpStep;
+
             //noise = texture3D(noiseSampler, pos);
 
             // lookup in transfer function
@@ -48,7 +60,7 @@ void main(void)
 
             //src = vec4(tfData.xyz, volumeData.a);
             //src = vec4(noise.xyz, data.a);
-			src = illumLIC(volumeData.r, tfData);
+			src = illumLIC(intensity, tfData);
 			//src = volumeData;
 
             // perform blending

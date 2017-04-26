@@ -9,6 +9,10 @@
 #include "dataSet.h"
 #include "parseArg.h"
 
+HDC dc;
+HGLRC glrc_main;
+HGLRC glrc_load;
+
 ParseArguments arguments;
 Camera cam;
 Renderer renderer;
@@ -57,3 +61,8 @@ void display(void);
 void resize(int width, int height);
 void updateHUD(bool forceUpdate = false);
 void keyboard(unsigned char key, int x, int y);
+
+//Multi-thread
+std::mutex mt_load;
+bool load_volume_buffer = false;
+std::condition_variable cv_load;

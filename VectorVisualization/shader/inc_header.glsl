@@ -61,3 +61,5 @@ uniform sampler2D malloSpecSampler;
 uniform sampler2D zoecklerSampler;
 
 uniform sampler2DRect imageFBOSampler;
+
+

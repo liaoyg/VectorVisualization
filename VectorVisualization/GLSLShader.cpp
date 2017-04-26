@@ -348,7 +348,8 @@ GLSLParamsLIC::GLSLParamsLIC(void) : viewport(-1),texMax(-1),scaleVol(-1),
                                      transferAlphaOpacSampler(-1),
                                      licKernelSampler(-1),malloDiffSampler(-1),
                                      malloSpecSampler(-1),zoecklerSampler(-1),
-                                     imageFBOSampler(-1)
+                                     imageFBOSampler(-1),
+									 interpSize(-1),interpStep(-1)
 {
 }
 
@@ -386,6 +387,9 @@ void GLSLParamsLIC::getMemoryLocations(GLhandleARB programObj, bool printList)
 	licVolumeSamplerOld = -1;
 
     imageFBOSampler = -1;
+
+	interpSize = -1;
+	interpStep = -1;
 
     glGetObjectParameterivARB(programObj, 
         GL_OBJECT_ACTIVE_UNIFORMS_ARB, &numUniforms);
@@ -456,6 +460,14 @@ void GLSLParamsLIC::getMemoryLocations(GLhandleARB programObj, bool printList)
 		else if (strcmp(buf, "licVolumeSamplerOld") == 0)
 		{
 			licVolumeSamplerOld = i;
+		}
+		else if (strcmp(buf, "interpSize") == 0)
+		{
+			interpSize = i;
+		}
+		else if (strcmp(buf, "interpStep") == 0)
+		{
+			interpStep = i;
 		}
 		else if (strcmp(buf, "scalarSampler") == 0)
 		{

@@ -26,6 +26,8 @@ public:
 	void setInterpolation(int size) {
 		_interpSize = size;
 	}
+	void increaseInterpoStep() { _curIntepStep++; }
+	void setIncreaseInterpoStep(int step) { _curIntepStep = step; }
 
 	bool isAnimation() { return animationFlag; }
 	void animationOn() { animationFlag = true; }
@@ -39,6 +41,7 @@ private:
 	int _curIntepStep;
 
 	GLuint _frambufferId;
+	// tex[0] : new tex. tex[1] : old tex.
 	Texture * _tex;
 };
 

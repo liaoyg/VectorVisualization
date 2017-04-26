@@ -121,6 +121,10 @@ public:
 
 	// update3D LIC Volume
 	void updateLICVolume(void);
+	// Using FBO calculate 3D LIC value and store them into a 3D Texture
+	void renderLICVolume(void);
+	// restore Old LIC Volume
+	void restoreLICVolume(void);
 
 	void setAnimationFlag(bool flag) { _isAnimationOn = flag; }
 protected:
@@ -154,8 +158,6 @@ protected:
 	// fills the hole in the clipped cube
 	void drawClippedPolygon(void);
 
-	// Using FBO calculate 3D LIC value and store them into a 3D Texture
-	void renderLICVolume(void);
 
 	// Using Volume Rendering to render LIC 3D volume
 	void raycastLICVolume(void);

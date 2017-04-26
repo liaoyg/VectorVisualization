@@ -16,6 +16,7 @@
 #include "reader.h"
 #include "types.h"
 #include <vector>
+#include <deque>
 
 
 struct VolumeData
@@ -30,11 +31,32 @@ struct VolumeData
 		scaleInv[0] = scaleInv[1] = scaleInv[2] = scaleInv[3] = 1.0f;
 		center[0] = center[1] = center[2] = 0.0f;
 	}
+	VolumeData(const VolumeData& obj)
+		:data(obj.data), newData(obj.newData),
+		dataDim(obj.dataDim),dataType(obj.dataType)
+	{
+		sliceDist[0] = obj.sliceDist[0];
+		sliceDist[1] = obj.sliceDist[1];
+		sliceDist[2] = obj.sliceDist[2];
+
+		size[0] = obj.size[0];
+		size[1] = obj.size[1];
+		size[2] = obj.size[2];
+
+		texSize[0] = obj.texSize[0];
+		texSize[1] = obj.texSize[1];
+		texSize[2] = obj.texSize[2];
+
+		extent[0] = obj.extent[0]; extent[1] = obj.extent[1]; extent[2] = obj.extent[2];
+		scale[0] = obj.scale[0]; scale[1] = obj.scale[1]; scale[2] = obj.scale[2]; scale[3] = obj.scale[3];
+		scaleInv[0] = obj.scaleInv[0]; scaleInv[1] = obj.scaleInv[1]; scaleInv[2] = obj.scaleInv[2]; scaleInv[3] = obj.scaleInv[3];
+		center[0] = obj.center[0]; center[1] = obj.center[1]; center[2] = obj.center[2];
+	}
 	~VolumeData(void);
 
 	void *data;
 	void *newData;
-	std::vector<void*> dataSets;
+	//std::vector<void*> dataSets;
 	unsigned char dataDim;
 	DataType dataType;
 
@@ -99,7 +121,8 @@ public:
 	void* loadTimeStep(int timeStep);
 
 	VolumeData* getVolumeData(void) { return _vd; }
-
+	std::deque<VolumeData*>& getVolumeDataSet(void) { return _volumeSet; }
+	std::vector<Texture*>& getTextureSet(void) { return _texSet; }
 
 	// updates data pointer of VolumeData
 	// the memory of the previous reference is not freed!
@@ -114,7 +137,7 @@ public:
 		GLuint texUnit = GL_TEXTURE0_ARB,
 		bool floatTex = false);
 
-	void createTextures(const char *texName, int datasize,
+	Texture * createTextures(int index, const char *texName,
 		GLuint texUnit = GL_TEXTURE0_ARB,
 		bool floatTex = false);
 
@@ -124,27 +147,35 @@ public:
 	int NextTimeStep(void);
 	int getCurTimeStep(void);
 
-	Texture* getTextureSetRef(int index) { return &(_texSet[index]); }
+	Texture* getTextureSetRef(int index) { return _texSet[index]; }
 
-	void checkInterpolateStage();
+	int checkInterpolateStage();
 	void setInterpolateSize(int size) { InterpSize = size; };
+	void increaseInterpIndex() { interpIndex++; }
+
+	void setVolumeDataIndex(int i)
+	{
+		_vd = _volumeSet[i];
+	}
 
 protected:
 private:
 	// fill a zero padded texture with normalized vector direction 
 	// in rgb and the magnitude in a 
-	void* fillTexDataFloat(void);
+	void* fillTexDataFloat(int i = 0);
 	void* fillTexDataFloatInterp();
 	// fill a zero padded texture with normalized vector direction 
 	// in rgb and the magnitude in a
-	void* fillTexDataChar(void);
+	void* fillTexDataChar(int i = 0);
 	void* fillTexDataCharInterp();
 
 	VolumeData *_vd;
 	DatFile _datFile;
 
+	std::deque<VolumeData*> _volumeSet;
+
 	//preload sequence of texture
-	std::vector<Texture> _texSet;
+	std::vector<Texture*> _texSet;
 
 	//Interpolate step Index
 	int interpIndex;

@@ -58,10 +58,11 @@ GLuint VolumeBuffer::create3dTexture(GLint internalformat, int w, int h, int d)
 
 void VolumeBuffer::restoreOldLayer()
 {
-	if (_tex[0].id > 0)
+	if (_tex[0].id > 0 && _tex[1].id > 0)
 	{
-		glBindTexture(GL_TEXTURE_3D, _tex[0].id);
-		glCopyTexSubImage3D(_tex[1].id, 0, 0, 0, 0, 0, 0, _tex[0].width, _tex[0].height);
+		glCopyImageSubData(_tex[0].id, GL_TEXTURE_3D, 0, 0, 0, 0, _tex[1].id, GL_TEXTURE_3D, 0, 0, 0, 0, _tex[0].width, _tex[0].height, _tex[0].depth);
+		//glBindTexture(GL_TEXTURE_3D, _tex[0].id);
+		//glCopyTexImage3D(_tex[1].id, 0, 0, 0, 0, 0, 0, _tex[0].width, _tex[0].height);
 	}
 }
 

@@ -88,7 +88,8 @@ struct LICParams
 		illumScale(1.0f), freqScale(1.0f),
 		numIterations(255),
 		stepsForward(32), stepsBackward(32),
-		stepSizeLIC(0.01f)
+		stepSizeLIC(0.01f),
+		interpSize(1), interpStep(0)
 	{}
 
 	float stepSizeVol;
@@ -100,6 +101,9 @@ struct LICParams
 	int stepsForward;
 	int stepsBackward;
 	float stepSizeLIC;
+
+	int interpSize;
+	int interpStep;
 };
 
 

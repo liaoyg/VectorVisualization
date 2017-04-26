@@ -92,6 +92,9 @@ struct GLSLParamsLIC
 	GLint licVolumeSamplerOld;
 
     GLint imageFBOSampler;
+
+	GLint interpSize;
+	GLint interpStep;
 };
 
 struct GLSLParamsBackground
