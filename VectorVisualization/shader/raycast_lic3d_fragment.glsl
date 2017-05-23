@@ -11,6 +11,7 @@ void main(void)
     vec4 data;
 	vec4 tfData;
     vec4 noise;
+	vec4 bgColor = vec4(1.0, 1.0, 1.0, 0.0);
 
     // compute the ray starting point
     vec4 geomPos = gl_TexCoord[0];
@@ -45,22 +46,29 @@ void main(void)
             vectorData = texture3D(volumeSampler, pos);
             volumeData = texture3D(licVolumeSampler, pos);
 
-			volumeDataOld = texture3D(licVolumeSamplerOld, pos);
+			//volumeDataOld = texture3D(licVolumeSamplerOld, pos);
 
 			float intensity = volumeData.r;
-			intensity = volumeDataOld.r*(1-interpStep) + volumeData.r * interpStep;
-			//volumeData = volumeDataMix;
-			//if(volumeData == volumeDataOld)
-				//intensity = interpStep;
+			//intensity = mix(volumeData.r, volumeData.g, interpStep);
 
             //noise = texture3D(noiseSampler, pos);
 
             // lookup in transfer function
-            tfData = texture1D(transferRGBASampler, vectorData.z);
+            //tfData = texture1D(transferRGBASampler, vectorData.z);
+			tfData = vec4(vectorData.rgb, 1.0);
 
-            //src = vec4(tfData.xyz, volumeData.a);
-            //src = vec4(noise.xyz, data.a);
-			src = illumLIC(intensity, tfData);
+
+			#if defined(ILLUM_GRADIENT)
+                src = illumGradient(volumeData, tfData, pos, dir, vectorData.xyz);
+#elif defined(ILLUM_MALLO)
+                src = illumMallo(intensity, tfData, pos, dir, vectorData.xyz);
+#elif defined(ILLUM_ZOECKLER)
+                src = illumZoeckler(intensity, tfData, pos, dir, vectorData.xyz);
+#else
+                // -- standard LIC --
+                src = illumLIC(intensity, tfData);
+#endif
+			//src = illumLIC(intensity, tfData);
 			//src = volumeData;
 
             // perform blending
@@ -79,7 +87,7 @@ void main(void)
                 break;
         }
     }
-
+	dest = clamp((1.0-dest.a)*bgColor + dest, 0.0, 1.0);
     gl_FragColor = dest;
     //gl_FragColor = vec4(texture1D(transferRGBASampler, pos.x).rgb, 0.5);
 }

@@ -85,6 +85,7 @@ VectorDataSet::VectorDataSet(void)
 	_vd = new VolumeData();
 	interpIndex = 0;
 	InterpSize = 1;
+	currentFrame = 0;
 }
 
 
@@ -212,8 +213,9 @@ int VectorDataSet::checkInterpolateStage()
 		//_vd->data = loadTimeStep(getNextTimeStep());
 		//_vd->newData = loadTimeStep(NextTimeStep());
 		_vd = _volumeSet.front();
-		
+		_volumeSet.pop_front();
 		interpIndex = 0;
+		currentFrame++;
 	}
 	return interpIndex;
 }
@@ -448,7 +450,7 @@ Texture * VectorDataSet::createTextures(int index, const char *texName, GLuint t
 		paddedData = NULL;
 
 		//_texSet.push_back(*tex);
-		std::cout << "texSet size: " << _texSet.size() << std::endl;
+		//std::cout << "texSet size: " << _texSet.size() << std::endl;
 		return tex;
 }
 
@@ -533,14 +535,14 @@ void* VectorDataSet::fillTexDataFloat(int i)
 	}
 
 	// adapt the range of the magnitude to [0,1]
-	//for (int z = 0; z<_vd->size[2]; ++z)
-	//	for (int y = 0; y<_vd->size[1]; ++y)
-	//		for (int x = 0; x<_vd->size[0]; ++x)
-	//		{
-	//			adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
-	//			len = padded[4 * adrPacked + 3] / maxLen;
-	//			padded[4 * adrPacked + 3] = (len > 1.0f) ? 1.0f : ((len < 0.0f) ? 0.0f : len);
-	//		}
+	for (int z = 0; z<_vd->size[2]; ++z)
+		for (int y = 0; y<_vd->size[1]; ++y)
+			for (int x = 0; x<_vd->size[0]; ++x)
+			{
+				adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
+				len = padded[4 * adrPacked + 3] / maxLen;
+				padded[4 * adrPacked + 3] = (len > 1.0f) ? 1.0f : ((len < 0.0f) ? 0.0f : len);
+			}
 
 	return padded;
 }
@@ -553,7 +555,8 @@ void* VectorDataSet::fillTexDataFloatInterp()
 	int adr;
 	int adrPacked;
 	float len;
-	float maxLen = -1.0;
+	//float maxLen = -1.0;
+	_vd->max_magnetic = -1.0;
 
 	unsigned char *dataU = (unsigned char*)_vd->data;
 	unsigned char *dataNextU = (unsigned char*)_vd->newData;
@@ -628,8 +631,8 @@ void* VectorDataSet::fillTexDataFloatInterp()
 					}
 				}
 
-				if (len > maxLen)
-					maxLen = len;
+				if (len > _vd->max_magnetic)
+					_vd->max_magnetic = len;
 
 				// store magnitude as float for higher precision
 				padded[4 * adrPacked + 3] = len;
@@ -643,7 +646,7 @@ void* VectorDataSet::fillTexDataFloatInterp()
 			for (int x = 0; x<_vd->size[0]; ++x)
 			{
 				adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
-				len = padded[4 * adrPacked + 3] / maxLen;
+				len = padded[4 * adrPacked + 3] / _vd->max_magnetic;
 				padded[4 * adrPacked + 3] = (len > 1.0f) ? 1.0f : ((len < 0.0f) ? 0.0f : len);
 			}
 
@@ -753,7 +756,7 @@ void* VectorDataSet::fillTexDataCharInterp()
 	int adr;
 	int adrPacked;
 	float len;
-	float maxLen = -1.0;
+	_vd->max_magnetic = -1.0;
 
 	float *magnitude = new float[size];
 
@@ -824,8 +827,8 @@ void* VectorDataSet::fillTexDataCharInterp()
 					}
 				}
 
-				if (len > maxLen)
-					maxLen = len;
+				if (len > _vd->max_magnetic)
+					_vd->max_magnetic = len;
 
 				// store magnitude as float for higher precision
 				magnitude[adrPacked] = len;
@@ -839,7 +842,7 @@ void* VectorDataSet::fillTexDataCharInterp()
 			for (int x = 0; x<_vd->size[0]; ++x)
 			{
 				adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
-				len = magnitude[adrPacked] / maxLen * UCHAR_MAX;
+				len = magnitude[adrPacked] / _vd->max_magnetic * UCHAR_MAX;
 				padded[4 * adrPacked + 3] = (unsigned char)((len > 255.0f) ? 255 : ((len < 0.0f) ? 0 : len));
 			}
 

@@ -30,6 +30,7 @@ struct VolumeData
 		scale[0] = scale[1] = scale[2] = scale[3] = 1.0f;
 		scaleInv[0] = scaleInv[1] = scaleInv[2] = scaleInv[3] = 1.0f;
 		center[0] = center[1] = center[2] = 0.0f;
+		max_magnetic = -1.0f;
 	}
 	VolumeData(const VolumeData& obj)
 		:data(obj.data), newData(obj.newData),
@@ -51,6 +52,8 @@ struct VolumeData
 		scale[0] = obj.scale[0]; scale[1] = obj.scale[1]; scale[2] = obj.scale[2]; scale[3] = obj.scale[3];
 		scaleInv[0] = obj.scaleInv[0]; scaleInv[1] = obj.scaleInv[1]; scaleInv[2] = obj.scaleInv[2]; scaleInv[3] = obj.scaleInv[3];
 		center[0] = obj.center[0]; center[1] = obj.center[1]; center[2] = obj.center[2];
+
+		max_magnetic = obj.max_magnetic;
 	}
 	~VolumeData(void);
 
@@ -68,6 +71,7 @@ struct VolumeData
 	float extent[3];
 	float scale[4];
 	float scaleInv[4];
+	float max_magnetic;
 
 	float center[3];
 };
@@ -153,10 +157,9 @@ public:
 	void setInterpolateSize(int size) { InterpSize = size; };
 	void increaseInterpIndex() { interpIndex++; }
 
-	void setVolumeDataIndex(int i)
-	{
-		_vd = _volumeSet[i];
-	}
+	int getInterpIndex() { return interpIndex; }
+	int getInterpIndexNext() { return (interpIndex < InterpSize ) ? interpIndex + 1 : 0; }
+	void setVolumeDataIndex(int i) { _vd = _volumeSet[i]; }
 
 protected:
 private:
@@ -180,6 +183,7 @@ private:
 	//Interpolate step Index
 	int interpIndex;
 	int InterpSize;
+	int currentFrame;
 };
 
 

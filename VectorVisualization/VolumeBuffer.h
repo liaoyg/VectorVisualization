@@ -42,6 +42,6 @@ private:
 
 	GLuint _frambufferId;
 	// tex[0] : new tex. tex[1] : old tex.
-	Texture * _tex;
+	Texture _tex[2];
 };
 

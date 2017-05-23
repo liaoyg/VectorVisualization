@@ -8,6 +8,8 @@ void main(void)
     vec4 tfData;
     vec4 noise;
     vec4 illum;
+	vec4 bgColor = vec4(1.0, 1.0, 1.0, 0.0);
+
 
     // compute the ray starting point
     vec4 geomPos = gl_TexCoord[0];
@@ -25,6 +27,13 @@ void main(void)
 
     vec4 dest = vec4(0.0);
     vec4 src = vec4(0.0);
+	float dis = 0.0;
+	vec3 oldPos = pos;
+
+	//variable used for streamDis
+	vec3 prestreamStart = vec3(0.0);
+	vec3 prestreamEnd = vec3(0.0);
+	vec2 prestreamDis = vec2(0.0);
 
 
     // TODO: MC offset
@@ -50,18 +59,42 @@ void main(void)
             // lookup in transfer function
 			// use secondary scalar data to map color value
 			vec4 scalarData = texture3D(scalarSampler, pos); 
-            //tfData = texture1D(transferRGBASampler, scalarData.r);
-            tfData = texture1D(transferRGBASampler, vectorData.b);
+            tfData = vec4(vectorData.rgb, 1.0);
+            //tfData = texture1D(transferRGBASampler, vectorData.a);
 			//tfData = texture1D(transferRGBASampler, length(vectorData));
 			//tfData = texture1D(transferRGBASampler, vectorData.x);
 
             // compute lic only if sample is visible
 			//if (tfData.a > 0.05)
-            if (scalarData.g > -0.0001)
-			//if (scalarData.g > 0.01  && scalarData.g < 0.15)
+            //if (scalarData.g > 0.0001)
+			//if (scalarData.g > 0.31  && scalarData.g < 0.35)
+			if(vectorData.a > 0.5 && vectorData.a < 0.75)
             {
                 // compute the LIC integral
-                illum = computeLIC(pos, vectorData);
+				vec3 streamStart;
+				vec3 streamEnd;
+				vec2 streamDis;
+                //illum = computeLIC(pos, vectorData, streamDis, streamStart, streamEnd);
+
+				vec3 center = vec3(0.0, 0.0, 0.0);
+				vec3 centerB = vec3(0.7, 0.7, 0.7);
+				//vec3 center = pos * 8;
+				//center = vec3(int(center.x)/8.0, int(center.y)/8.0, int(center.z)/8.0);
+
+#if defined(STREAMLINE_DISTANCE)
+				float strDis = computeStreamlineDis(pos, center);
+				//float strDisB = computeStreamlineDis(pos, centerB);
+				dis += strDis;
+				illum.a = cos(strDis*256) - 0.5;
+				if(illum.a > 0.0)
+					illum.a = 1.0;
+				//tfData = texture1D(transferRGBASampler, strDis);
+#else
+                illum = computeLIC(pos, vectorData, streamDis, streamStart, streamEnd);
+#endif
+				//tfData = vec4(vectorData.rgb, 1.0);
+
+				oldPos = pos;
 
                 // scale LIC intensity
                 illum.a *= licKernel.b * gradient.r;
@@ -95,5 +128,6 @@ void main(void)
     }
 #endif
 
+	dest = clamp((1.0-dest.a)*bgColor + dest, 0.0, 1.0); // make up to white background
     gl_FragColor = dest;
 }

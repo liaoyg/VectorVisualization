@@ -32,7 +32,7 @@
 Renderer::Renderer(void) : _framebuffer(0), _depthbuffer(0), _stencilbuffer(0),
 _winWidth(1), _winHeight(1), _useFBO(false),
 _renderMode(VOLIC_RAYCAST), _vd(NULL), _licFilter(NULL),
-_dataTex(NULL), _noiseTex(NULL), _licKernelTex(NULL), _scalarTex(NULL),
+_dataTex(NULL), _nextDataTex(NULL), _noiseTex(NULL), _licKernelTex(NULL), _scalarTex(NULL),
 _lambda2Tex(NULL), _tfRGBTex(NULL), _tfAlphaOpacTex(NULL),
 _illumZoecklerTex(NULL), _illumMalloDiffTex(NULL),
 _illumMalloSpecTex(NULL), _quadric(NULL), _storeFrame(true),
@@ -941,7 +941,11 @@ void Renderer::setRenderVolParams(GLSLParamsLIC *param)
 	if (param->scaleVol > -1)
 		glUniform4fvARB(param->scaleVol, 1, _vd->scale);
 	if (param->scaleVolInv > -1)
-		glUniform4fvARB(param->scaleVol, 1, _vd->scaleInv);
+		glUniform4fvARB(param->scaleVolInv, 1, _vd->scaleInv);
+	CHECK_FOR_OGL_ERROR();
+
+	if (param->maxVectorLength > -1)
+		glUniform1fARB(param->maxVectorLength, _vd->max_magnetic);
 	CHECK_FOR_OGL_ERROR();
 
 	if (_lowRes)
@@ -1010,6 +1014,12 @@ void Renderer::setRenderVolTextures(GLSLParamsLIC *param)
 	{
 		glUniform1iARB(param->volumeSampler, _dataTex->texUnit - GL_TEXTURE0_ARB);
 		_dataTex->bind();
+	}
+	if (param->volumeSamplerNext > -1)
+	{
+		_nextDataTex->texUnit = GL_TEXTURE12_ARB;
+		glUniform1iARB(param->volumeSamplerNext, _nextDataTex->texUnit - GL_TEXTURE0_ARB);
+		_nextDataTex->bind();
 	}
 	if (param->licVolumeSampler > -1)
 	{
@@ -1359,6 +1369,10 @@ void Renderer::renderLICVolume(void)
 		//render volume to 3D Texture
 		_licvolumebuffer->drawSlice((z + 0.5f) / (float)depth);
 	}
+
+	_dataTex->unbind();
+	_nextDataTex->unbind();
+
 	_volumeRenderShader.disableShader();
 	
 	// restore old clear color
@@ -1399,13 +1413,16 @@ void Renderer::raycastLICVolume(void)
 
 	setRenderVolParams(&_paramLicRaycast);
 	setRenderVolTextures(&_paramLicRaycast);
-
+	
+	CHECK_FOR_OGL_ERROR();
 	drawCubeFaces();
+	CHECK_FOR_OGL_ERROR();
 	drawClippedPolygon();
 
 	CHECK_FOR_OGL_ERROR();
 
-
+	_licvolumebuffer->getCurrentLayer()->unbind();
+	_licvolumebuffer->getOldLayer()->unbind();
 	_dataTex->unbind();
 	_tfRGBTex->unbind();
 	_tfAlphaOpacTex->unbind();

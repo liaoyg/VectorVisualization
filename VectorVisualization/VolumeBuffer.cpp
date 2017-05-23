@@ -1,6 +1,5 @@
 #include "VolumeBuffer.h"
-
-
+#include "types.h"
 
 VolumeBuffer::VolumeBuffer(GLint format, int width, int height, int depth, int layers)
 	:_width(width), _height(height), _depth(depth), _maxlayers(layers), _layer(0),
@@ -9,13 +8,15 @@ VolumeBuffer::VolumeBuffer(GLint format, int width, int height, int depth, int l
 	glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC)wglGetProcAddress("glGenFramebuffersEXT");
 	_frambufferId = 0;
 	glGenFramebuffersEXT(1, &_frambufferId);
-	_tex = new Texture[_maxlayers];
-	for (int i = 0; i<_maxlayers; i++) {
+	//_tex = new Texture[_maxlayers];
+	for (int i = 0; i < 2; i++) {
 		_tex[i].setTex(GL_TEXTURE_3D, create3dTexture(format, _width, _height, _depth), "LIC_Tex");
 		_tex[i].width = _width;
 		_tex[i].height = _height;
 		_tex[i].depth = _depth;
 	}
+	_tex[0].texUnit = GL_TEXTURE13_ARB;
+	_tex[1].texUnit = GL_TEXTURE14_ARB;
 }
 
 
@@ -61,8 +62,20 @@ void VolumeBuffer::restoreOldLayer()
 	if (_tex[0].id > 0 && _tex[1].id > 0)
 	{
 		glCopyImageSubData(_tex[0].id, GL_TEXTURE_3D, 0, 0, 0, 0, _tex[1].id, GL_TEXTURE_3D, 0, 0, 0, 0, _tex[0].width, _tex[0].height, _tex[0].depth);
-		//glBindTexture(GL_TEXTURE_3D, _tex[0].id);
-		//glCopyTexImage3D(_tex[1].id, 0, 0, 0, 0, 0, 0, _tex[0].width, _tex[0].height);
+
+		/*glBindFramebuffer(GL_FRAMEBUFFER, _frambufferId);
+		for (int i = 0; i < _tex[0].depth; i++)
+		{
+			glFramebufferTexture3D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+				GL_TEXTURE_3D, _tex[0].id, 0, i);
+			glFramebufferTexture3D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+				GL_TEXTURE_3D, _tex[1].id, 0, i);
+			glDrawBuffer(GL_COLOR_ATTACHMENT1);
+			glBlitFramebuffer(0, 0, _tex[0].width, _tex[0].height, 0, 0, _tex[0].width, _tex[0].height,
+				GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
+		CHECK_FOR_OGL_ERROR();
 	}
 }
 

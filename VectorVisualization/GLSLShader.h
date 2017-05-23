@@ -77,8 +77,10 @@ struct GLSLParamsLIC
     GLint licKernel;
     GLint numIterations;
     GLint alphaCorrection;
+	GLint maxVectorLength;
 
     GLint volumeSampler;
+	GLint volumeSamplerNext;
 	GLint scalarSampler;
     GLint noiseSampler;
     GLint mcOffsetSampler;

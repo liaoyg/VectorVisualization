@@ -141,25 +141,29 @@ void idle(void)
 	if (animationMode && (renderTechnique == VOLIC_SLICING || renderTechnique == VOLIC_RAYCAST /*|| renderTechnique == VOLIC_LICVOLUME*/))
 	{
 		vd.createTextureIterp("VectorData_Tex", GL_TEXTURE2_ARB, true);
-		vd.checkInterpolateStage();
+		//renderer.setDataTex(vd.getTextureSetRef(vd.getNextTimeStep()));
+		if (vd.checkInterpolateStage()==1)
+			renderer.setVolumeData(vd.getVolumeData());
 	}
 	if (animationMode && renderTechnique == VOLIC_LICVOLUME)
 	{
 		licParams.interpStep++;
 		updateScene = true;
-
+		if (licParams.interpStep == licParams.interpSize)
+		{
+			renderer.setDataTex(vd.getTextureSetRef(vd.getNextTimeStep()));
+			renderer.setNextDataTex(vd.getTextureSetRef(vd.NextTimeStep()));
+			//vd.createTexture("VolumeLIC_Tex", GL_TEXTURE2_ARB, true);
+			renderer.updateLICVolume();
+			licParams.interpStep = 0;
+		}
 	}
-	if (licParams.interpStep == licParams.interpSize)
-	{
-		renderer.setDataTex(vd.getTextureSetRef(vd.getNextTimeStep()));
-		renderer.renderLICVolume();
-		licParams.interpStep = 0;
-	}
+	
 	//int i = 0;
 	//renderer.setDataTex(vd.getTextureSetRef(vd.getNextTimeStep()));
 
 	//Update Render Animation source
-	renderer.setVolumeData(vd.getVolumeData());
+	//renderer.setVolumeData(vd.getVolumeData());
 
 	// check whether to change to high res rendering
 	if (requestHighRes && renderer.isLowResEnabled())
@@ -372,14 +376,14 @@ void keyboard(unsigned char key, int x, int y)
 		updateHUD(); updateScene = true;
 		break;
 	case 'h': // frequency scaling
-		licParams.freqScale += 0.2f; //0.5f
+		licParams.freqScale += 0.1f; //0.5f
 		updateHUD();
 		updateScene = true;
 		break;
 	case 'n':
-		licParams.freqScale -= 0.2f; //0.5f
-		if (licParams.freqScale < 0.5f)
-			licParams.freqScale = 0.5f;
+		licParams.freqScale -= 0.1f; //0.5f
+		if (licParams.freqScale < 0.1f)
+			licParams.freqScale = 0.1f;
 		updateHUD();
 		updateScene = true;
 		break;
@@ -410,6 +414,10 @@ void keyboard(unsigned char key, int x, int y)
 		// update 3D Lic calculation
 	case 'u':
 		//renderer.updateLICVolume();
+		updateScene = true;
+		break;
+	case '`':
+		renderer.loadGLSLShader("#define STREAMLINE_DISTANCE");
 		updateScene = true;
 		break;
 
@@ -475,16 +483,23 @@ void keyboardSpecial(int key, int x, int y)
 	{
 	case GLUT_KEY_F1:
 		renderTechnique = VOLIC_VOLUME;
+		renderer.setDataTex(vd.getTextureRef());
 		break;
 	case GLUT_KEY_F2:
 		renderTechnique = VOLIC_RAYCAST;
+		renderer.setDataTex(vd.getTextureRef());
 		break;
 	case GLUT_KEY_F3:
 		renderTechnique = VOLIC_SLICING;
+		renderer.setDataTex(vd.getTextureRef());
 		renderer.updateSlices();
 		break;
 	case GLUT_KEY_F4:
 		renderTechnique = VOLIC_LICVOLUME;
+		renderer.setDataTex(vd.getTextureSetRef(vd.getCurTimeStep()));
+		renderer.setNextDataTex(vd.getTextureSetRef(vd.NextTimeStep()));
+		renderer.renderLICVolume();
+		renderer.updateLICVolume();
 		//renderer.updateLICVolume();
 		break;
 	case GLUT_KEY_F5:
@@ -707,20 +722,23 @@ void loadVecterData(VectorDataSet * vdd)
 		if (!vds.empty())
 			vds.back()->newData = datap;
 		vds.push_back(vdp);
-		std::cout << "vector data set size: " << vds.size() << std::endl;
+		//std::cout << "vector data set size: " << vds.size() << std::endl;
 	}
+	vds.back()->newData = vds.back()->data;
 	
 	//initial first volume
 	vdd->setVolumeDataIndex(0);
+	vds.pop_front();
 
 	std::unique_lock<std::mutex> lck_load(mt_load);
 	load_volume_buffer = true;
 	cv_load.notify_one();
 	
 
-	for (int i =0; i < vds.size(); i++)
+	for (int i = 0; i < vds.size(); i++)
 	{
-		vts.push_back(vdd->createTextures(i, "LoadThread_Tex", GL_TEXTURE1_ARB, true));
+		vts.push_back(vdd->createTextures(i, "LoadThread_Tex", GL_TEXTURE2_ARB, true));
+		//std::cout << "create vector texture: " << vts.size() << std::endl;
 	}
 }
 
@@ -742,6 +760,7 @@ void init(void)
 	}
 	std::thread load_thread(loadVecterData, &vd);
 	load_thread.join();
+	//load_thread.detach();
 
 	auto pred = []() {
 		return load_volume_buffer;
@@ -836,7 +855,9 @@ void init(void)
 	renderer.setVolumeData(vd.getVolumeData());
 	renderer.setLICFilter(&licFilter);
 
-	renderer.setDataTex(vd.getTextureRef());
+	//renderer.setDataTex(vd.getTextureRef());
+	renderer.setDataTex(vd.getTextureSetRef(vd.getCurTimeStep()));
+	renderer.setNextDataTex(vd.getTextureSetRef(vd.NextTimeStep()));
 	renderer.setScalarTex(scalar.getTextureRef());
 	renderer.setNoiseTex(noise.getTextureRef());
 	renderer.setTFrgbTex(tfEdit.getTextureRGB());
@@ -847,8 +868,8 @@ void init(void)
 
 	renderer.setLICParams(&licParams);
 
-	renderer.renderLICVolume();
-	renderer.updateLICVolume();
+	//renderer.renderLICVolume();
+	//renderer.updateLICVolume();
 	CHECK_FOR_OGL_ERROR();
 	renderer.updateLightPos();
 	renderer.updateSlices();
@@ -910,6 +931,7 @@ int main(int argc, char **argv)
 	initGL();
 	init();
 
+	// Load a thread to calculate LIC volume
 	//std::thread load_thread(loadVecterData, &vd);
 	//load_thread.join();
 
