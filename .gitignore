@@ -246,3 +246,7 @@ ModelManifest.xml
 /noise
 /VectorVisualization/snapshotOut
 /VectorVisualization/video
+*.html
+*.csv
+/VectorVisualization/glew-1.11.0
+/VectorVisualization/lib
