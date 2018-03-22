@@ -10,6 +10,8 @@ void main(void)
     vec4 illum;
 	vec4 bgColor = vec4(1.0, 1.0, 1.0, 0.0);
 
+	float ao = 1.0;
+
 
     // compute the ray starting point
     vec4 geomPos = gl_TexCoord[0];
@@ -60,15 +62,12 @@ void main(void)
 			// use secondary scalar data to map color value
 			vec4 scalarData = texture3D(scalarSampler, pos); 
             tfData = vec4(vectorData.rgb, 1.0);
-            //tfData = texture1D(transferRGBASampler, vectorData.a);
-			//tfData = texture1D(transferRGBASampler, length(vectorData));
-			//tfData = texture1D(transferRGBASampler, vectorData.x);
 
-            // compute lic only if sample is visible
-			//if (tfData.a > 0.05)
-            //if (scalarData.g > 0.0001)
-			//if (scalarData.g > 0.31  && scalarData.g < 0.35)
+#if defined(STREAMLINE_DISTANCE)
 			if(vectorData.a > 0.5 && vectorData.a < 0.75)
+#else
+			if (scalarData.g > -0.01)
+#endif
             {
                 // compute the LIC integral
 				vec3 streamStart;
@@ -83,17 +82,20 @@ void main(void)
 
 #if defined(STREAMLINE_DISTANCE)
 				float strDis = computeStreamlineDis(pos, center);
-				//float strDisB = computeStreamlineDis(pos, centerB);
 				dis += strDis;
 				illum.a = cos(strDis*256) - 0.5;
 				if(illum.a > 0.0)
 					illum.a = 1.0;
-				//tfData = texture1D(transferRGBASampler, strDis);
 #else
-                illum = computeLIC(pos, vectorData, streamDis, streamStart, streamEnd);
+				ao = 1.0;
+				//illum = computeLIC(pos, vectorData, streamDis, streamStart, streamEnd);
+                illum = computeLICwithAO(pos, vectorData, streamDis, streamStart, streamEnd, ao);
 #endif
 				//tfData = vec4(vectorData.rgb, 1.0);
-
+				//ao *= licKernel.b * 15;
+				ao = texture3D(noiseLAOSampler, pos).r;
+				//ao = texture3D(noiseSampler, pos).a;
+				
 				oldPos = pos;
 
                 // scale LIC intensity
@@ -103,15 +105,27 @@ void main(void)
                 // zoeckler/mallo/gradient/no illum
 #if defined(ILLUM_GRADIENT)
                 src = illumGradient(illum, tfData, pos, dir, vectorData.xyz);
+				//src = vec4(normalize(illum.rgb), 1.0);
 #elif defined(ILLUM_MALLO)
                 src = illumMallo(illum.a, tfData, pos, dir, vectorData.xyz);
-#elif defined(ILLUM_ZOECKLER)
+#elif defined(ILLUM_ZOECKLER) 
                 src = illumZoeckler(illum.a, tfData, pos, dir, vectorData.xyz);
+#elif defined(AMBIENT_OCCULUSION)
+
+				//src = illumLIC(intensity.a, tfData, ao);
+				tfData = vec4(1.0, 1.0, 1.0, 1.0);
+				//src = vec4(tfData * (ao));
+				if (ao > 0.0)
+					src = vec4(tfData.rgb * (1-ao), ao);
+				else
+					src = vec4(tfData.rgb * (1 - ao), 0.0);
+				//ao = clamp(1-ao, 0.0, 1.0);
+				//src = illumGradient(illum, tfData, pos, dir, vectorData.xyz, ao);
 #else
                 // -- standard LIC --
                 src = illumLIC(illum.a, tfData);
 #endif
-				
+				//src = vec4(normalize(vectorData.rgb), illum.a);
                 // perform blending
                 src.rgb *= src.a;
                 dest = clamp((1.0-dest.a)*src + dest, 0.0, 1.0);

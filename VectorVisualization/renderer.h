@@ -102,6 +102,7 @@ public:
 	void switchRecording(void) { _recording = !_recording; }
 
 	void setLICParams(LICParams *params) { _licParams = params; }
+	void setLAOParams(LAOParams *params) { _laoParams = params; }
 	/*
 	void setStepSize(float stepSize) { _stepSize = stepSize; }
 	void setGradientScale(float scale) { _gradientScale = scale; }
@@ -126,6 +127,10 @@ public:
 	void renderLICVolume(void);
 	// restore Old LIC Volume
 	void restoreLICVolume(void);
+	// pre-computed local ambient occulusion volume
+	void computeLAOVolume(void);
+	void computeNoiseLAO(void);
+	void computeVolumeNormal(void);
 
 	void setAnimationFlag(bool flag) { _isAnimationOn = flag; }
 protected:
@@ -146,6 +151,7 @@ protected:
 
 	void setRenderVolParams(GLSLParamsLIC *param);
 	void setRenderVolTextures(GLSLParamsLIC *param);
+	void setRenderVolImage(GLSLParamsLIC *param);
 
 	// render only the volume
 	void renderVolume(void);
@@ -162,6 +168,10 @@ protected:
 
 	// Using Volume Rendering to render LIC 3D volume
 	void raycastLICVolume(void);
+
+	// Scattering LIC Value and Raycasting the volume
+	void scatterLICVolume(void);
+	void renderScatterLIC(void);
 
 	// draw a screen filling quad and display FBO content 
 	// composited with a background color
@@ -228,6 +238,9 @@ private:
 
 	// 3D LIC Volume Buffer
 	VolumeBuffer * _licvolumebuffer;
+	VolumeBuffer * _licvolumeNormal;
+	VolumeBuffer * _licLAObuffer;
+	VolumeBuffer * _noiseLAObuffer;
 
 	// GLSL shaders
 	GLSLShader _bgShader;
@@ -238,6 +251,10 @@ private:
 	GLSLShader _volumeShader;
 	GLSLShader _volumeRenderShader;
 	GLSLShader _licRaycastShader;
+	GLSLShader _laoRenderShader;
+	GLSLShader _volumeNormalShader;
+
+	GLSLShader _licScatterShader;
 
 	GLSLShader _phongShader;
 
@@ -248,7 +265,10 @@ private:
 	GLSLParamsLIC _paramSliceBlend;
 	GLSLParamsLIC _paramVolume;
 	GLSLParamsLIC _paramLICVolume;
+	GLSLParamsLIC _paramLICNormVolume;
 	GLSLParamsLIC _paramLicRaycast;
+	GLSLParamsLIC _paramLicScatter;
+	GLSLParamsLIC _paramLAOVolume;
 
 
 	// Textures
@@ -259,6 +279,10 @@ private:
 	Texture *_imgBufferTex1;
 
 	Texture *_mcOffsetTex;
+
+	// scatter volume texture;
+
+	Texture *_scatterTex;
 
 	// vector data
 	Texture *_dataTex;
@@ -298,6 +322,7 @@ private:
 
 
 	LICParams *_licParams;
+	LAOParams *_laoParams;
 
 	bool _debug;
 };

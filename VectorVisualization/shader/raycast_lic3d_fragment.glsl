@@ -1,6 +1,8 @@
 
 uniform sampler3D licVolumeSampler;
-uniform sampler3D licVolumeSamplerOld;
+uniform sampler3D licVolumeNormal;
+uniform sampler3D laoVolumeSampler;
+uniform sampler3D licVolumeNormalSampler;
 
 uniform int interpSize;
 uniform float interpStep;
@@ -26,16 +28,12 @@ void main(void)
 
     float scalarData;
     vec4 volumeData;
-	vec4 volumeDataOld;
 	vec4 vectorData;
+	vec4 normalData;
+	float ao = 0.0;
 
     vec4 dest = vec4(0.0);
     vec4 src;
-
-    //dest = texture3D(licVolumeSampler, pos);
-
-    // move one step forward
-    //pos += dir * stepSize;
 
     for (int j=0; (!outside && (j<numIterations)); ++j)
     {
@@ -45,28 +43,38 @@ void main(void)
             // lookup scalar value
             vectorData = texture3D(volumeSampler, pos);
             volumeData = texture3D(licVolumeSampler, pos);
+			normalData = texture3D(licVolumeNormalSampler, pos);
 
-			//volumeDataOld = texture3D(licVolumeSamplerOld, pos);
+			vec4 intensity = vec4(normalData.rgb, volumeData.r);
 
-			float intensity = volumeData.r;
-			//intensity = mix(volumeData.r, volumeData.g, interpStep);
-
-            //noise = texture3D(noiseSampler, pos);
+			//float intensity = normalData.r ;
+			//volumeData.r *= licKernel.b * gradient.r;		
 
             // lookup in transfer function
             //tfData = texture1D(transferRGBASampler, vectorData.z);
+#if defined(AMBIENT_OCCULUSION)
+			ao = texture3D(laoVolumeSampler, pos).r;
+#endif
+			//tfData = vec4(0.0, 1.0, 0.0, 1.0);
 			tfData = vec4(vectorData.rgb, 1.0);
-
-
-			#if defined(ILLUM_GRADIENT)
-                src = illumGradient(volumeData, tfData, pos, dir, vectorData.xyz);
+#if defined(ILLUM_GRADIENT)
+				//intensity = vec4(normalize(intensity.rgb), intensity.a);
+                //src = illumGradient(intensity, tfData, pos, dir, vectorData.xyz);
+				src = vec4(normalize(intensity.rgb), 1.0);
 #elif defined(ILLUM_MALLO)
-                src = illumMallo(intensity, tfData, pos, dir, vectorData.xyz);
+                src = illumMallo(intensity.a, tfData, pos, dir, vectorData.xyz);
 #elif defined(ILLUM_ZOECKLER)
-                src = illumZoeckler(intensity, tfData, pos, dir, vectorData.xyz);
+                src = illumZoeckler(intensity.a, tfData, pos, dir, vectorData.xyz);
+#elif defined(AMBIENT_OCCULUSION)
+				//src = illumLIC(intensity.a, tfData, ao);
+				tfData = vec4(1.0, 1.0, 1.0, 1.0);
+				if(ao > 0.0)
+					src = vec4(tfData.rgb * (1 - ao), ao);
+				else
+					src = vec4(tfData.rgb * (1 - ao), 0.0);
 #else
                 // -- standard LIC --
-                src = illumLIC(intensity, tfData);
+                src = illumLIC(intensity.a, tfData);
 #endif
 			//src = illumLIC(intensity, tfData);
 			//src = volumeData;
@@ -75,12 +83,9 @@ void main(void)
             src.rgb *= src.a;
             dest = clamp((1.0-dest.a)*src + dest, 0.0, 1.0);
 
-            // early ray termination with high opacity
-            // ...
-
             // move one step forward
             pos += dir * stepSize;
-
+			// early ray termination with high opacity
             // terminate loop if outside volume
             outside = any(bvec4(clamp(pos.xyz, vec3(0.0), texMax.xyz) - pos.xyz, dest.a > 0.95));
             if (outside)

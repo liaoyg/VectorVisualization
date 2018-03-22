@@ -136,7 +136,7 @@ bool GLSLShader::loadShader(int countVS, char **vertexShaderNames,
     }
 
 	versionStr = new char[128];
-	snprintf(versionStr, 128, "#version 120\n");
+	snprintf(versionStr, 128, "#version 430 compatibility\n");
 
     // load vertex shader source files
     if (countVS > 0)
@@ -342,8 +342,8 @@ GLSLParamsLIC::GLSLParamsLIC(void) : viewport(-1),texMax(-1),scaleVol(-1),
                                      scaleVolInv(-1),stepSize(-1),gradient(-1),
                                      licParams(-1),licKernel(-1),numIterations(-1),
                                      alphaCorrection(-1),volumeSampler(-1), volumeSamplerNext(-1), scalarSampler(-1),
-									 licVolumeSampler(-1), licVolumeSamplerOld(-1),
-                                     noiseSampler(-1),mcOffsetSampler(-1),
+									 licVolumeSampler(-1), licVolumeSamplerOld(-1), licVolumeNormalSampler(-1),
+                                     noiseSampler(-1),mcOffsetSampler(-1), noiseLAOSampler(-1),
                                      transferRGBASampler(-1),
                                      transferAlphaOpacSampler(-1),
                                      licKernelSampler(-1),malloDiffSampler(-1),
@@ -373,6 +373,8 @@ void GLSLParamsLIC::getMemoryLocations(GLhandleARB programObj, bool printList)
     numIterations = -1;
     alphaCorrection = -1;
 	maxVectorLength = -1;
+	minScalarRange = -1;
+	maxScalarRange = -1;
 
     volumeSampler = -1;
 	volumeSamplerNext = -1;
@@ -387,11 +389,18 @@ void GLSLParamsLIC::getMemoryLocations(GLhandleARB programObj, bool printList)
     zoecklerSampler = -1;
 	licVolumeSampler = -1;
 	licVolumeSamplerOld = -1;
+	laoVolumeSampler = -1;
+	licVolumeNormalSampler = -1;
+	noiseLAOSampler = -1;
 
     imageFBOSampler = -1;
 
 	interpSize = -1;
 	interpStep = -1;
+
+	sampleNum = -1;
+	pointNum = -1;
+	maxRayLen = -1;
 
     glGetObjectParameterivARB(programObj, 
         GL_OBJECT_ACTIVE_UNIFORMS_ARB, &numUniforms);
@@ -426,6 +435,14 @@ void GLSLParamsLIC::getMemoryLocations(GLhandleARB programObj, bool printList)
 		else if (strcmp(buf, "maxVectorLength") == 0)
 		{
 			maxVectorLength = i;
+		}
+		else if (strcmp(buf, "minScalarRange") == 0)
+		{
+			minScalarRange = i;
+		}
+		else if (strcmp(buf, "maxScalarRange") == 0)
+		{
+			maxScalarRange = i;
 		}
         else if (strcmp(buf, "scaleVolInv") == 0)
         {
@@ -470,6 +487,18 @@ void GLSLParamsLIC::getMemoryLocations(GLhandleARB programObj, bool printList)
 		else if (strcmp(buf, "licVolumeSamplerOld") == 0)
 		{
 			licVolumeSamplerOld = i;
+		}
+		else if (strcmp(buf, "licVolumeNormalSampler") == 0)
+		{
+			licVolumeNormalSampler = i;
+		}
+		else if (strcmp(buf, "laoVolumeSampler") == 0)
+		{
+			laoVolumeSampler = i;
+		}
+		else if (strcmp(buf, "noiseLAOSampler") == 0)
+		{
+			noiseLAOSampler = i;
 		}
 		else if (strcmp(buf, "interpSize") == 0)
 		{
@@ -519,6 +548,22 @@ void GLSLParamsLIC::getMemoryLocations(GLhandleARB programObj, bool printList)
         {
             imageFBOSampler = i;
         }
+		else if (strcmp(buf, "scatterVolume") == 0)
+		{
+			volumeImage = i;
+		}
+		else if (strcmp(buf, "sampleNum") == 0)
+		{
+			sampleNum = i;
+		}
+		else if (strcmp(buf, "pointNum") == 0)
+		{
+			pointNum = i;
+		}
+		else if (strcmp(buf, "maxRayLen") == 0)
+		{
+			maxRayLen = i;
+		}
         /*
         else if (strcmp(buf, "") == 0)
         {

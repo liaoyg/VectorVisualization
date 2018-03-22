@@ -416,8 +416,12 @@ void keyboard(unsigned char key, int x, int y)
 		//renderer.updateLICVolume();
 		updateScene = true;
 		break;
-	case '`':
+	case '-':
 		renderer.loadGLSLShader("#define STREAMLINE_DISTANCE");
+		updateScene = true;
+		break;
+	case '=':
+		renderer.loadGLSLShader("#define AMBIENT_OCCULUSION");
 		updateScene = true;
 		break;
 
@@ -499,7 +503,9 @@ void keyboardSpecial(int key, int x, int y)
 		renderer.setDataTex(vd.getTextureSetRef(vd.getCurTimeStep()));
 		renderer.setNextDataTex(vd.getTextureSetRef(vd.NextTimeStep()));
 		renderer.renderLICVolume();
-		renderer.updateLICVolume();
+		renderer.computeVolumeNormal();
+		//renderer.updateLICVolume();
+		renderer.computeLAOVolume();
 		//renderer.updateLICVolume();
 		break;
 	case GLUT_KEY_F5:
@@ -516,6 +522,10 @@ void keyboardSpecial(int key, int x, int y)
 			renderer.loadGLSLShader();
 		}
 		//renderer.updateLICVolume();
+		break;
+	case GLUT_KEY_F6:
+		renderTechnique = VOLIC_SCATTER;
+		renderer.setDataTex(vd.getTextureRef());
 		break;
 	}
 	renderer.setTechnique(renderTechnique);
@@ -629,7 +639,7 @@ void mouseMotionInteract(int x, int y)
 	if (mouseBtnDown)
 	{
 		// change to low res mode immediately
-		//renderer.enableLowRes(true);
+		renderer.enableLowRes(true);
 		//requestHighRes = false;
 		mouseBtnDown = false;
 
@@ -832,6 +842,18 @@ void init(void)
 	CHECK_FOR_OGL_ERROR();
 	//std::cout << std::endl;
 
+	//Test of Algorithm using CPU for instance
+	//cpuLic = new CPULIC(256, 256, 256);
+	//cpuLic->setkernelData(licFilter.getFilterData());
+	//cpuLic->setVectorTexture((vd.getTextureSet())[1]);
+	//cpuLic->getVectorTextureData();
+	//cpuLic->setNoiseData(&noise);
+	//cpuLic->getNoiseTextureData();
+	////cpuLic->gather3DLIC(vd.getVolumeDataSet());
+	//cpuLic->scatter3DLIC(vd.getVolumeDataSet());
+	//cpuLic->generateTexture();
+	CHECK_FOR_OGL_ERROR();
+
 	clipPlanes[0].rotate(Quaternion_fromAngleAxis(static_cast<float>(M_PI / 2.0), Vector3_new(0.0f, 1.0f, 0.0f)));
 	clipPlanes[1].rotate(Quaternion_fromAngleAxis(static_cast<float>(M_PI / 2.0), Vector3_new(-1.0f, 0.0f, 0.0f)));
 
@@ -855,8 +877,10 @@ void init(void)
 	renderer.setVolumeData(vd.getVolumeData());
 	renderer.setLICFilter(&licFilter);
 
-	//renderer.setDataTex(vd.getTextureRef());
-	renderer.setDataTex(vd.getTextureSetRef(vd.getCurTimeStep()));
+	renderer.setDataTex(vd.getTextureRef());
+	//renderer.setDataTex(cpuLic->getTextureRef());
+	//renderer.setDataTex(noise.getTextureRef());
+	//renderer.setDataTex(vd.getTextureSetRef(vd.getCurTimeStep()));
 	renderer.setNextDataTex(vd.getTextureSetRef(vd.NextTimeStep()));
 	renderer.setScalarTex(scalar.getTextureRef());
 	renderer.setNoiseTex(noise.getTextureRef());
@@ -867,12 +891,20 @@ void init(void)
 	renderer.setIllumMalloSpecTex(illum.getTexMalloSpecular());
 
 	renderer.setLICParams(&licParams);
+	renderer.setLAOParams(&laoParams);
+
+	//compute once noise LAO
+	renderer.loadGLSLShader("#define NOISE_LAO_COMPUTE");
+	renderer.computeNoiseLAO();
+	renderer.loadGLSLShader();
 
 	//renderer.renderLICVolume();
 	//renderer.updateLICVolume();
 	CHECK_FOR_OGL_ERROR();
 	renderer.updateLightPos();
 	renderer.updateSlices();
+
+
 }
 
 void initMultiThread(void)

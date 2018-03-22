@@ -68,6 +68,7 @@ enum RenderTechnique
 	//VOLIC_DEPTH_PEEL_MULTI
 	VOLIC_LICVOLUME,
 	VOLIC_VOLUMEANI,
+	VOLIC_SCATTER,
 };
 
 enum MouseMode
@@ -85,11 +86,12 @@ enum MouseMode
 struct LICParams
 {
 	LICParams(void) : stepSizeVol(1.0f / 256.0f), gradientScale(30.0f),
-		illumScale(1.0f), freqScale(0.6f),
+		illumScale(1.0f), freqScale(1.0f),
 		numIterations(255),
 		stepsForward(48), stepsBackward(48),
 		stepSizeLIC(0.01f),
-		interpSize(1), interpStep(0)
+		interpSize(1), interpStep(0),
+		minScalarRange(0.0), maxScalarRange(1.0)
 	{}
 
 	float stepSizeVol;
@@ -104,6 +106,19 @@ struct LICParams
 
 	int interpSize;
 	int interpStep;
+
+	float minScalarRange;
+	float maxScalarRange;
+};
+
+struct LAOParams
+{
+	LAOParams(void) : sampleNum(6), pointNum(48), maxRayLen(0.1)
+	{}
+
+	int sampleNum;
+	int pointNum;
+	float maxRayLen;
 };
 
 
