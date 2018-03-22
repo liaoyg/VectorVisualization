@@ -124,6 +124,7 @@
   <ItemGroup>
     <ClCompile Include="3DLIC.cpp" />
     <ClCompile Include="camera.cpp" />
+    <ClCompile Include="CPULIC.cpp" />
     <ClCompile Include="dataset.cpp" />
     <ClCompile Include="fpsCounter.cpp" />
     <ClCompile Include="GLSLShader.cpp" />
@@ -148,6 +149,7 @@
   <ItemGroup>
     <ClInclude Include="3DLIC.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="CPULIC.h" />
     <ClInclude Include="dataset.h" />
     <ClInclude Include="fpsCounter.h" />
     <ClInclude Include="GLSLShader.h" />
@@ -171,10 +173,14 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\background_fragment.glsl" />
+    <None Include="shader\computer_volume.glsl" />
     <None Include="shader\inc_header.glsl" />
     <None Include="shader\inc_illum.glsl" />
     <None Include="shader\inc_lic.glsl" />
     <None Include="shader\lic3d_fragment.glsl" />
+    <None Include="shader\lic3d_lao_fragment.glsl" />
+    <None Include="shader\lic3d_normal_fragment.glsl" />
+    <None Include="shader\lic3d_scattering_fragment.glsl" />
     <None Include="shader\lic3d_slicingblend_fragment.glsl" />
     <None Include="shader\lic3d_slicing_fragment.glsl" />
     <None Include="shader\lic3d_volume_fragment.glsl" />
