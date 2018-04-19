@@ -32,12 +32,12 @@
 Renderer::Renderer(void) : _framebuffer(0), _depthbuffer(0), _stencilbuffer(0),
 _winWidth(1), _winHeight(1), _useFBO(false),
 _renderMode(VOLIC_RAYCAST), _vd(NULL), _licFilter(NULL),
-_dataTex(NULL), _noiseTex(NULL), _licKernelTex(NULL), _scalarTex(NULL),
+_dataTex(NULL), _nextDataTex(NULL), _noiseTex(NULL), _licKernelTex(NULL), _scalarTex(NULL),
 _lambda2Tex(NULL), _tfRGBTex(NULL), _tfAlphaOpacTex(NULL),
 _illumZoecklerTex(NULL), _illumMalloDiffTex(NULL),
 _illumMalloSpecTex(NULL), _quadric(NULL), _storeFrame(true),
 _lowRes(false), _wireframe(false), _screenShot(false), _recording(false), _licParams(NULL),
-_debug(false), _isAnimationOn(false)
+_laoParams(NULL), _debug(false), _isAnimationOn(false)
 
 {
 	_imgBufferTex0 = new Texture;
@@ -48,6 +48,11 @@ _debug(false), _isAnimationOn(false)
 
 	_snapshotFileName = "snapshot.png";
 	frames = 0;
+
+	_scatterTex = new Texture;
+	_scatterTex->width = 512;
+	_scatterTex->height = 512;
+	_scatterTex->depth = 512;
 
 }
 
@@ -82,7 +87,7 @@ Renderer::~Renderer(void)
 
 void Renderer::init(char *defines)
 {
-	float lightPos[] = { 0.0f, 0.0, 0.0f, 0.0f };
+	float lightPos[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	_quadric = gluNewQuadric();
 	gluQuadricDrawStyle(_quadric, GLU_FILL);
@@ -94,12 +99,25 @@ void Renderer::init(char *defines)
 
 	//init volume buffer
 	// A 3D texture buffer to store LIC value according to the vectore field
-	_licvolumebuffer = new VolumeBuffer(GL_RGBA16F_ARB, 512, 512, 512, 2);
+	bool iHasDepth = false;
+	_licvolumebuffer = new VolumeBuffer(GL_RGB32F, 256, 256, 256, 2, iHasDepth);
+	_licvolumeNormal = new VolumeBuffer(GL_RGB32F, 256, 256, 256, 1, iHasDepth);
+	_licLAObuffer = new VolumeBuffer(GL_R32F, 256, 256, 256, 1);
+	_noiseLAObuffer = new VolumeBuffer(GL_R32F, 256, 256, 256, 1);
 
 	loadGLSLShader(defines);
 	CHECK_FOR_OGL_ERROR();
 
 	glLightfv(GL_LIGHT1, GL_POSITION, lightPos);
+
+	float ambientlight[] = { 0.8f, 0.8f, 0.8f, 1.0f};
+	float diffuselight[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	float specularlight[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+
+	glLightfv(GL_LIGHT1, GL_AMBIENT, ambientlight);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuselight);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, specularlight);
+
 }
 
 
@@ -190,6 +208,10 @@ void Renderer::render(bool update)
 		case VOLIC_LICVOLUME:
 			raycastLICVolume();
 			break;
+		case VOLIC_SCATTER:
+			scatterLICVolume();
+			renderScatterLIC();
+			break;
 		default:
 			std::cerr << "Renderer:  Unknown render mode!" << std::endl;
 			break;
@@ -267,7 +289,6 @@ void Renderer::render(bool update)
 	}
 	}
 	*/
-
 	glPushMatrix();
 	glTranslatef(_vd->center[0], _vd->center[1], _vd->center[2]);
 	enableClipPlanes();
@@ -279,8 +300,11 @@ void Renderer::render(bool update)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		for (int i = 0; i<_numClipPlanes; ++i)
 			_clipPlanes[i].drawSlice();
+		//glutWireSphere(0.5, 20, 20);
+		//glTranslatef(-0.5, -0.5, -0.5);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
+
 	CHECK_FOR_OGL_ERROR();
 
 	
@@ -470,7 +494,7 @@ void Renderer::renderLight(bool highlight)
 {
 	int slices = 24;
 	float axis[3];
-	float ambient[4] = { 0.4f, 0.4f, 0.4f, 1.0f };
+	float ambient[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	float diffuse[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	float specular[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 
@@ -809,6 +833,7 @@ void Renderer::loadGLSLShader(char *defines)
 	char *vertexShader[] = { "shader/volic_vertex.glsl" };
 	char *vectorFieldFragShader[] = { "shader/vectorfield_fragment.glsl" };
 	char *bgFragShader[] = { "shader/background_fragment.glsl" };
+	char *computeShader[] = { "shader/compute_volume.glsl" };
 
 	char *licRaycastFragShader[] = { "shader/inc_header.glsl",
 		"shader/inc_lic.glsl",
@@ -832,10 +857,23 @@ void Renderer::loadGLSLShader(char *defines)
 		"shader/lic3d_volume_fragment.glsl",
 	};
 
+	char *licVolumeNormFragShader[] = { "shader/inc_header.glsl",
+		"shader/inc_lic.glsl",
+		"shader/lic3d_normal_fragment.glsl",
+	};
+
 	char *raycastLICVolumeFragShader[] = { 
 		"shader/inc_header.glsl",
 		"shader/inc_illum.glsl",
 		"shader/raycast_lic3d_fragment.glsl", };
+
+	char *scatterLICVolumeFragShader[] = {
+		"shader/inc_header.glsl",
+		"shader/lic3d_scattering_fragment.glsl", };
+
+	char *licLAOFragShader[] = { "shader/inc_header.glsl",
+		"shader/lic3d_lao_fragment.glsl",
+	};
 
 	char *phongVertexShader[] = { "shader/phong_vertex.glsl" };
 	char *phongFragmentShader[] = { "shader/phong_fragment.glsl" };
@@ -908,6 +946,16 @@ void Renderer::loadGLSLShader(char *defines)
 			<< "for volumeRenderShader Shader." << std::endl;
 	}
 	_paramLICVolume.getMemoryLocations(_volumeRenderShader.getProgramObj(), _debug);
+	
+	if (!_volumeNormalShader.loadShader(1, reinterpret_cast<char**>(vertexShader),
+		3, reinterpret_cast<char**>(licVolumeNormFragShader),
+		defines))
+	{
+		std::cerr << "Renderer:  Error loading Vertex and Fragment Program "
+			<< "for volumeRenderShader Shader." << std::endl;
+	}
+	_paramLICNormVolume.getMemoryLocations(_volumeNormalShader.getProgramObj(), _debug);
+
 	if (!_licRaycastShader.loadShader(1, reinterpret_cast<char**>(vertexShader),
 		3, reinterpret_cast<char**>(raycastLICVolumeFragShader),
 		defines))
@@ -917,6 +965,23 @@ void Renderer::loadGLSLShader(char *defines)
 	}
 	_paramLicRaycast.getMemoryLocations(_licRaycastShader.getProgramObj(), _debug);
 
+	if (!_licScatterShader.loadShader(1, reinterpret_cast<char**>(vertexShader),
+		2, reinterpret_cast<char**>(scatterLICVolumeFragShader),
+		defines))
+	{
+		std::cerr << "Renderer:  Error loading Vertex and Fragment Program "
+			<< "for raycastLICVolumeFragShader Shader." << std::endl;
+	}
+	_paramLicScatter.getMemoryLocations(_licScatterShader.getProgramObj(), _debug);
+
+	if (!_laoRenderShader.loadShader(1, reinterpret_cast<char**>(vertexShader),
+		2, reinterpret_cast<char**>(licLAOFragShader),
+		defines))
+	{
+		std::cerr << "Renderer:  Error loading Vertex and Fragment Program "
+			<< "for raycastLICVolumeFragShader Shader." << std::endl;
+	}
+	_paramLAOVolume.getMemoryLocations(_laoRenderShader.getProgramObj(), _debug);
 
 	CHECK_FOR_OGL_ERROR();
 }
@@ -941,7 +1006,15 @@ void Renderer::setRenderVolParams(GLSLParamsLIC *param)
 	if (param->scaleVol > -1)
 		glUniform4fvARB(param->scaleVol, 1, _vd->scale);
 	if (param->scaleVolInv > -1)
-		glUniform4fvARB(param->scaleVol, 1, _vd->scaleInv);
+		glUniform4fvARB(param->scaleVolInv, 1, _vd->scaleInv);
+	CHECK_FOR_OGL_ERROR();
+
+	if (param->maxVectorLength > -1)
+		glUniform1fARB(param->maxVectorLength, _vd->max_magnetic);
+	if (param->minScalarRange > -1)
+		glUniform1fARB(param->minScalarRange, 1.0f);
+	if (param->maxVectorLength > -1)
+		glUniform1fARB(param->maxVectorLength, 13.0f);
 	CHECK_FOR_OGL_ERROR();
 
 	if (_lowRes)
@@ -993,8 +1066,32 @@ void Renderer::setRenderVolParams(GLSLParamsLIC *param)
 	if (param->numIterations > -1)
 		glUniform1iARB(param->numIterations, _licParams->numIterations);
 	CHECK_FOR_OGL_ERROR();
+
+	if (param->interpSize > -1)
+		glUniform1iARB(param->interpSize, _licParams->interpSize);
+	if (param->interpStep > -1)
+		glUniform1fARB(param->interpStep, float(_licParams->interpStep)/ _licParams->interpSize);
+	CHECK_FOR_OGL_ERROR();
+
+	// set LAO rendering parameters
+	if (!_laoParams)
+		return;
+	if (param->sampleNum > -1)
+		glUniform1iARB(param->sampleNum, _laoParams->sampleNum);
+	if (param->pointNum > -1)
+		glUniform1iARB(param->pointNum, _laoParams->pointNum);
+	if (param->maxRayLen > -1)
+		glUniform1fARB(param->maxRayLen, _laoParams->maxRayLen);
+	CHECK_FOR_OGL_ERROR();
 }
 
+void Renderer::setRenderVolImage(GLSLParamsLIC *param)
+{
+	if (param->volumeImage > -1)
+	{
+		glUniform1iARB(param->volumeImage, 3);
+	}
+}
 
 void Renderer::setRenderVolTextures(GLSLParamsLIC *param)
 {
@@ -1005,14 +1102,31 @@ void Renderer::setRenderVolTextures(GLSLParamsLIC *param)
 		glUniform1iARB(param->volumeSampler, _dataTex->texUnit - GL_TEXTURE0_ARB);
 		_dataTex->bind();
 	}
+	if (param->volumeSamplerNext > -1)
+	{
+		_nextDataTex->texUnit = GL_TEXTURE12_ARB;
+		glUniform1iARB(param->volumeSamplerNext, _nextDataTex->texUnit - GL_TEXTURE0_ARB);
+		_nextDataTex->bind();
+	}
 	if (param->licVolumeSampler > -1)
 	{
-		glUniform1iARB(param->licVolumeSampler, _licvolumebuffer->getCurrentLayer()->texUnit - GL_TEXTURE0_ARB);
-		_licvolumebuffer->getCurrentLayer()->bind();
-	}if (param->licVolumeSamplerOld > -1)
+		glUniform1iARB(param->licVolumeSampler, _licvolumebuffer->getLayer(0)->texUnit - GL_TEXTURE0_ARB);
+		_licvolumebuffer->getLayer(0)->bind();
+	}
+	if (param->licVolumeSamplerOld > -1)
 	{
 		glUniform1iARB(param->licVolumeSamplerOld, _licvolumebuffer->getOldLayer()->texUnit - GL_TEXTURE0_ARB);
 		_licvolumebuffer->getOldLayer()->bind();
+	}
+	if (param->licVolumeNormalSampler > -1)
+	{
+		glUniform1iARB(param->licVolumeNormalSampler, _licvolumebuffer->getLayer(1)->texUnit - GL_TEXTURE0_ARB);
+		_licvolumebuffer->getLayer(1)->bind();
+	}
+	if (param->laoVolumeSampler > -1)
+	{
+		glUniform1iARB(param->laoVolumeSampler, _licLAObuffer->getCurrentLayer()->texUnit - GL_TEXTURE0_ARB);
+		_licLAObuffer->getCurrentLayer()->bind();
 	}
 	if (param->scalarSampler > -1)
 	{
@@ -1023,6 +1137,11 @@ void Renderer::setRenderVolTextures(GLSLParamsLIC *param)
 	{
 		glUniform1iARB(param->noiseSampler, _noiseTex->texUnit - GL_TEXTURE0_ARB);
 		_noiseTex->bind();
+	}
+	if (param->noiseLAOSampler > -1)
+	{
+		glUniform1iARB(param->noiseLAOSampler, _noiseLAObuffer->getCurrentLayer()->texUnit - GL_TEXTURE0_ARB);
+		_noiseLAObuffer->getCurrentLayer()->bind();
 	}
 	if (param->mcOffsetSampler > -1)
 	{
@@ -1330,7 +1449,7 @@ void Renderer::renderLICVolume(void)
 	glPushMatrix();
 	glLoadIdentity();
 	//glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
-
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	glGetIntegerv(GL_VIEWPORT, oldViewport);
 	glViewport(0, 0, width, height);
 	glDisable(GL_DEPTH_TEST);
@@ -1345,17 +1464,20 @@ void Renderer::renderLICVolume(void)
 	setRenderVolParams(&_paramLICVolume);
 	setRenderVolTextures(&_paramLICVolume);
 
-	if (_licvolumebuffer->isAnimation())
-	{
-		_licvolumebuffer->restoreOldLayer();
-	}
+	CHECK_FOR_OGL_ERROR();
 	
 	for (int z = 0; z < depth; z++)
 	{
 		_licvolumebuffer->attachLayer(0, z);
+		_licvolumebuffer->attachLayer(1, z);
+		CHECK_FRAMEBUFFER_STATUS();
 		//render volume to 3D Texture
 		_licvolumebuffer->drawSlice((z + 0.5f) / (float)depth);
 	}
+	CHECK_FOR_OGL_ERROR();
+	_dataTex->unbind();
+	_nextDataTex->unbind();
+
 	_volumeRenderShader.disableShader();
 	
 	// restore old clear color
@@ -1375,7 +1497,220 @@ void Renderer::renderLICVolume(void)
 
 void Renderer::updateLICVolume(void)
 {
+	//_licvolumebuffer->restoreOldLayer();
 	renderLICVolume();
+	//loadGLSLShader("#define ILLUM_GRADIENT");
+	//computeVolumeNormal();
+	computeLAOVolume();
+}
+
+void Renderer::restoreLICVolume(void)
+{
+	//_licvolumebuffer->restoreOldLayer();
+}
+
+void Renderer::computeVolumeNormal(void)
+{
+	int oldViewport[4];
+	float color[4];
+	int depth = _licvolumeNormal->getDepth();
+	int width = _licvolumeNormal->getWidth();
+	int height = _licvolumeNormal->getHeight();
+	GLint currentFBO = 0;
+
+	// store current framebuffer object
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &currentFBO);
+
+	_licvolumeNormal->bind();
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	//glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+
+	glGetIntegerv(GL_VIEWPORT, oldViewport);
+	glViewport(0, 0, width, height);
+	glDisable(GL_DEPTH_TEST);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+
+	glGetFloatv(GL_COLOR_CLEAR_VALUE, color);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+
+	_volumeNormalShader.enableShader();
+
+	setRenderVolParams(&_paramLICNormVolume);
+	setRenderVolTextures(&_paramLICNormVolume);
+
+	CHECK_FOR_OGL_ERROR();
+
+	for (int z = 0; z < depth; z++)
+	{
+		_licvolumeNormal->attachLayer(0, z);
+		CHECK_FRAMEBUFFER_STATUS();
+		//render volume to 3D Texture
+		_licvolumeNormal->drawSlice((z + 0.5f) / (float)depth);
+	}
+	CHECK_FOR_OGL_ERROR();
+	_dataTex->unbind();
+
+	_volumeNormalShader.disableShader();
+
+	// restore old clear color
+	glClearColor(color[0], color[1], color[2], color[3]);
+
+	glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]);
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	_licvolumeNormal->unbind();
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, currentFBO);
+
+	CHECK_FRAMEBUFFER_STATUS();
+}
+
+void Renderer::computeNoiseLAO(void)
+{
+	int oldViewport[4];
+	float color[4];
+	int depth = _noiseLAObuffer->getDepth();
+	int width = _noiseLAObuffer->getWidth();
+	int height = _noiseLAObuffer->getHeight();
+	GLint currentFBO = 0;
+
+	// store current framebuffer object
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &currentFBO);
+
+	_noiseLAObuffer->bind();
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	//glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+
+	glGetIntegerv(GL_VIEWPORT, oldViewport);
+	glViewport(0, 0, width, height);
+	glDisable(GL_DEPTH_TEST);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+
+	glGetFloatv(GL_COLOR_CLEAR_VALUE, color);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+
+	_laoRenderShader.enableShader();
+
+	setRenderVolParams(&_paramLAOVolume);
+	setRenderVolTextures(&_paramLAOVolume);
+	if(_paramLAOVolume.licVolumeSampler > -1)
+	{
+		glUniform1iARB(_paramLAOVolume.licVolumeSampler, _noiseTex->texUnit - GL_TEXTURE0_ARB);
+		_noiseTex->bind();
+	}
+	CHECK_FOR_OGL_ERROR();
+
+	for (int z = 0; z < depth; z++)
+	{
+		_noiseLAObuffer->attachLayer(0, z);
+		//render volume to 3D Texture
+		_noiseLAObuffer->drawSlice((z + 0.5f) / (float)depth);
+	}
+
+	_noiseTex->unbind();
+	_noiseLAObuffer->getCurrentLayer()->unbind();
+
+	_laoRenderShader.disableShader();
+
+	// restore old clear color
+	glClearColor(color[0], color[1], color[2], color[3]);
+
+	glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]);
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	_noiseLAObuffer->unbind();
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, currentFBO);
+
+	CHECK_FRAMEBUFFER_STATUS();
+}
+
+void Renderer::computeLAOVolume(void)
+{
+	int oldViewport[4];
+	float color[4];
+	int depth = _licvolumebuffer->getDepth();
+	int width = _licvolumebuffer->getWidth();
+	int height = _licvolumebuffer->getHeight();
+	GLint currentFBO = 0;
+
+	// store current framebuffer object
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &currentFBO);
+
+	_licLAObuffer->bind();
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	//glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+
+	glGetIntegerv(GL_VIEWPORT, oldViewport);
+	glViewport(0, 0, width, height);
+	glDisable(GL_DEPTH_TEST);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+
+	glGetFloatv(GL_COLOR_CLEAR_VALUE, color);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+
+	_laoRenderShader.enableShader();
+
+	setRenderVolParams(&_paramLAOVolume);
+
+	setRenderVolTextures(&_paramLAOVolume);
+	CHECK_FOR_OGL_ERROR();
+
+	for (int z = 0; z < depth; z++)
+	{
+		_licLAObuffer->attachLayer(0, z);
+		//render volume to 3D Texture
+		_licLAObuffer->drawSlice((z + 0.5f) / (float)depth);
+	}
+
+	_dataTex->unbind();
+	_nextDataTex->unbind();
+	_licvolumebuffer->getCurrentLayer()->unbind();
+	_licvolumebuffer->getCurrentDepthLayer()->unbind();
+
+	_laoRenderShader.disableShader();
+
+	// restore old clear color
+	glClearColor(color[0], color[1], color[2], color[3]);
+
+	glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]);
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	_licLAObuffer->unbind();
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, currentFBO);
+
+	CHECK_FRAMEBUFFER_STATUS();
 }
 
 void Renderer::raycastLICVolume(void)
@@ -1390,18 +1725,123 @@ void Renderer::raycastLICVolume(void)
 
 	setRenderVolParams(&_paramLicRaycast);
 	setRenderVolTextures(&_paramLicRaycast);
-
+	
+	CHECK_FOR_OGL_ERROR();
 	drawCubeFaces();
+	CHECK_FOR_OGL_ERROR();
 	drawClippedPolygon();
 
 	CHECK_FOR_OGL_ERROR();
 
+	_licvolumebuffer->getCurrentLayer()->unbind();
+	_licvolumeNormal->getCurrentLayer()->unbind();
+	_licLAObuffer->getCurrentLayer()->unbind();
+	_dataTex->unbind();
+	_tfRGBTex->unbind();
+	_tfAlphaOpacTex->unbind();
 
+	_licRaycastShader.disableShader();
+
+	glDisable(GL_CULL_FACE);
+}
+
+void Renderer::renderScatterLIC(void)
+{
+	_licRaycastShader.enableShader();
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	//glDisable(GL_BLEND);
+	glEnable(GL_BLEND);
+
+	setRenderVolParams(&_paramLicRaycast);
+	setRenderVolTextures(&_paramLicRaycast);
+
+	if (_paramLicRaycast.licVolumeSampler > -1)
+	{
+		glUniform1iARB(_paramLicRaycast.licVolumeSampler, _scatterTex->texUnit - GL_TEXTURE0_ARB);
+		_scatterTex->bind();
+	}
+
+	CHECK_FOR_OGL_ERROR();
+	drawCubeFaces();
+	CHECK_FOR_OGL_ERROR();
+	drawClippedPolygon();
+
+	CHECK_FOR_OGL_ERROR();
+
+	_licvolumebuffer->getCurrentLayer()->unbind();
+	_licvolumebuffer->getOldLayer()->unbind();
 	_dataTex->unbind();
 	_tfRGBTex->unbind();
 	_tfAlphaOpacTex->unbind();
 
 	glDisable(GL_CULL_FACE);
+}
+
+void Renderer::scatterLICVolume(void)
+{
+	int oldViewport[4];
+	float color[4];
+	glEnable(GL_TEXTURE_3D);
+	glActiveTexture(GL_TEXTURE6_ARB);
+	CHECK_FOR_OGL_ERROR();
+	if (_scatterTex->id == 0)
+	{
+		glGenTextures(1, &(_scatterTex->id));
+		glBindTexture(GL_TEXTURE_3D, _scatterTex->id);
+		glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA16F_ARB, _scatterTex->width, _scatterTex->height, _scatterTex->depth);
+		glBindTexture(GL_TEXTURE_3D, 0);
+	}
+	_scatterTex->texUnit = GL_TEXTURE6_ARB;
+
+	//GLuint ray_shader = glCreateShader(GL_COMPUTE_SHADER);
+	//glShaderSource(ray_shader, 1, &the_ray_shader_string, NULL);
+	//glCompileShader(ray_shader);
+	//// check for compilation errors as per normal here
+
+	//GLuint ray_program = glCreateProgram();
+	//glAttachShader(ray_program, ray_shader);
+	//glLinkProgram(ray_program);
+
+	glGetFloatv(GL_COLOR_CLEAR_VALUE, color);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+
+	glBindImageTexture(3, _scatterTex->id, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F_ARB);
+	
+	_licScatterShader.enableShader();
+
+	setRenderVolParams(&_paramLicScatter);
+	setRenderVolTextures(&_paramLicScatter);
+	setRenderVolImage(&_paramLicScatter);
+
+	CHECK_FOR_OGL_ERROR();
+
+	//glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, volume_dims[0], volume_dims[1], volume_dims[2], 0, GL_RED, GL_UNSIGNED_BYTE, voxels);
+
+	/*ShaderProgram computeVolumeShader;
+	computeVolumeShader.loadShader(GL_COMPUTE_SHADER, "compute_volume.glsl");
+	computeVolumeShader.link();
+	computeVolumeShader.use();
+	computeVolumeShader.uniform("volume", 0);
+	glBindImageTexture(0, volume_tid, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R8);
+	glDispatchCompute(volume_dims[0], volume_dims[1], volume_dims[2]);
+	glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R8);
+	computeVolumeShader.unUse();
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);*/
+
+	glDispatchCompute(_scatterTex->width, _scatterTex->height, _scatterTex->depth);
+
+	CHECK_FOR_OGL_ERROR();
+	_dataTex->unbind();
+	_nextDataTex->unbind();
+
+	_licScatterShader.disableShader();
+
+	// restore old clear color
+	glClearColor(color[0], color[1], color[2], color[3]);
+
 }
 
 void Renderer::renderBackground(void)

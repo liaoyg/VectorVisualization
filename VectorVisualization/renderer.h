@@ -86,6 +86,7 @@ public:
 	bool isDebugModeEnabled(void) { return _debug; }
 
 	void setDataTex(Texture *tex) { _dataTex = tex; }
+	void setNextDataTex(Texture *tex) { _nextDataTex = tex; }
 	void setScalarTex(Texture *tex) { _scalarTex = tex; }
 	void setNoiseTex(Texture *tex) { _noiseTex = tex; }
 	void setLICFilterTex(Texture *tex) { _licKernelTex = tex; }
@@ -101,6 +102,7 @@ public:
 	void switchRecording(void) { _recording = !_recording; }
 
 	void setLICParams(LICParams *params) { _licParams = params; }
+	void setLAOParams(LAOParams *params) { _laoParams = params; }
 	/*
 	void setStepSize(float stepSize) { _stepSize = stepSize; }
 	void setGradientScale(float scale) { _gradientScale = scale; }
@@ -121,6 +123,14 @@ public:
 
 	// update3D LIC Volume
 	void updateLICVolume(void);
+	// Using FBO calculate 3D LIC value and store them into a 3D Texture
+	void renderLICVolume(void);
+	// restore Old LIC Volume
+	void restoreLICVolume(void);
+	// pre-computed local ambient occulusion volume
+	void computeLAOVolume(void);
+	void computeNoiseLAO(void);
+	void computeVolumeNormal(void);
 
 	void setAnimationFlag(bool flag) { _isAnimationOn = flag; }
 protected:
@@ -141,6 +151,7 @@ protected:
 
 	void setRenderVolParams(GLSLParamsLIC *param);
 	void setRenderVolTextures(GLSLParamsLIC *param);
+	void setRenderVolImage(GLSLParamsLIC *param);
 
 	// render only the volume
 	void renderVolume(void);
@@ -154,11 +165,13 @@ protected:
 	// fills the hole in the clipped cube
 	void drawClippedPolygon(void);
 
-	// Using FBO calculate 3D LIC value and store them into a 3D Texture
-	void renderLICVolume(void);
 
 	// Using Volume Rendering to render LIC 3D volume
 	void raycastLICVolume(void);
+
+	// Scattering LIC Value and Raycasting the volume
+	void scatterLICVolume(void);
+	void renderScatterLIC(void);
 
 	// draw a screen filling quad and display FBO content 
 	// composited with a background color
@@ -225,6 +238,9 @@ private:
 
 	// 3D LIC Volume Buffer
 	VolumeBuffer * _licvolumebuffer;
+	VolumeBuffer * _licvolumeNormal;
+	VolumeBuffer * _licLAObuffer;
+	VolumeBuffer * _noiseLAObuffer;
 
 	// GLSL shaders
 	GLSLShader _bgShader;
@@ -235,6 +251,10 @@ private:
 	GLSLShader _volumeShader;
 	GLSLShader _volumeRenderShader;
 	GLSLShader _licRaycastShader;
+	GLSLShader _laoRenderShader;
+	GLSLShader _volumeNormalShader;
+
+	GLSLShader _licScatterShader;
 
 	GLSLShader _phongShader;
 
@@ -245,7 +265,10 @@ private:
 	GLSLParamsLIC _paramSliceBlend;
 	GLSLParamsLIC _paramVolume;
 	GLSLParamsLIC _paramLICVolume;
+	GLSLParamsLIC _paramLICNormVolume;
 	GLSLParamsLIC _paramLicRaycast;
+	GLSLParamsLIC _paramLicScatter;
+	GLSLParamsLIC _paramLAOVolume;
 
 
 	// Textures
@@ -257,8 +280,13 @@ private:
 
 	Texture *_mcOffsetTex;
 
+	// scatter volume texture;
+
+	Texture *_scatterTex;
+
 	// vector data
 	Texture *_dataTex;
+	Texture *_nextDataTex;
 	Texture *_scalarTex;
 	Texture *_noiseTex;
 	// LIC filter kernel
@@ -294,6 +322,7 @@ private:
 
 
 	LICParams *_licParams;
+	LAOParams *_laoParams;
 
 	bool _debug;
 };

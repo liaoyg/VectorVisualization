@@ -71,13 +71,13 @@ void main(void)
             // lookup scalar value
             vectorData = texture3D(volumeSampler, pos);
             noise = texture3D(noiseSampler, pos);
-            scalarData = vectorData.a;
+            scalarData = vectorData.r;
 
             // lookup in transfer function
             data = texture1D(transferRGBASampler, scalarData);
 
-            src = vec4(vectorData.xyz, data.a);
-            //src = vec4(noise.xyz, data.a);
+            //src = vec4(vectorData.xyz, data.a);
+            src = vec4(data.xyz, vectorData.r);
 
             // perform blending
             src.rgb *= src.a;

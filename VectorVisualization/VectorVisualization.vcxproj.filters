@@ -93,6 +93,9 @@
     <ClCompile Include="VolumeTex.cpp">
       <Filter>Source Files\graphics</Filter>
     </ClCompile>
+    <ClCompile Include="CPULIC.cpp">
+      <Filter>Source Files\graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="types.h">
@@ -161,6 +164,9 @@
     <ClInclude Include="VolumeTex.h">
       <Filter>Source Files\graphics</Filter>
     </ClInclude>
+    <ClInclude Include="CPULIC.h">
+      <Filter>Source Files\graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\background_fragment.glsl">
@@ -200,6 +206,18 @@
       <Filter>Source Files\shaders</Filter>
     </None>
     <None Include="shader\raycast_lic3d_fragment.glsl">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shader\lic3d_scattering_fragment.glsl">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shader\computer_volume.glsl">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shader\lic3d_lao_fragment.glsl">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shader\lic3d_normal_fragment.glsl">
       <Filter>Source Files\shaders</Filter>
     </None>
   </ItemGroup>

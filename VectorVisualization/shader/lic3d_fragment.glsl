@@ -8,6 +8,10 @@ void main(void)
     vec4 tfData;
     vec4 noise;
     vec4 illum;
+	vec4 bgColor = vec4(1.0, 1.0, 1.0, 0.0);
+
+	float ao = 1.0;
+
 
     // compute the ray starting point
     vec4 geomPos = gl_TexCoord[0];
@@ -25,6 +29,13 @@ void main(void)
 
     vec4 dest = vec4(0.0);
     vec4 src = vec4(0.0);
+	float dis = 0.0;
+	vec3 oldPos = pos;
+
+	//variable used for streamDis
+	vec3 prestreamStart = vec3(0.0);
+	vec3 prestreamEnd = vec3(0.0);
+	vec2 prestreamDis = vec2(0.0);
 
 
     // TODO: MC offset
@@ -50,18 +61,42 @@ void main(void)
             // lookup in transfer function
 			// use secondary scalar data to map color value
 			vec4 scalarData = texture3D(scalarSampler, pos); 
-            //tfData = texture1D(transferRGBASampler, scalarData.r);
-            tfData = texture1D(transferRGBASampler, vectorData.b);
-			//tfData = texture1D(transferRGBASampler, length(vectorData));
-			//tfData = texture1D(transferRGBASampler, vectorData.x);
+            tfData = vec4(vectorData.rgb, 1.0);
 
-            // compute lic only if sample is visible
-			//if (tfData.a > 0.05)
-            if (scalarData.g > -0.0001)
-			//if (scalarData.g > 0.01  && scalarData.g < 0.15)
+#if defined(STREAMLINE_DISTANCE)
+			if(vectorData.a > 0.5 && vectorData.a < 0.75)
+#else
+			if (scalarData.g > -0.01)
+#endif
             {
                 // compute the LIC integral
-                illum = computeLIC(pos, vectorData);
+				vec3 streamStart;
+				vec3 streamEnd;
+				vec2 streamDis;
+                //illum = computeLIC(pos, vectorData, streamDis, streamStart, streamEnd);
+
+				vec3 center = vec3(0.0, 0.0, 0.0);
+				vec3 centerB = vec3(0.7, 0.7, 0.7);
+				//vec3 center = pos * 8;
+				//center = vec3(int(center.x)/8.0, int(center.y)/8.0, int(center.z)/8.0);
+
+#if defined(STREAMLINE_DISTANCE)
+				float strDis = computeStreamlineDis(pos, center);
+				dis += strDis;
+				illum.a = cos(strDis*256) - 0.5;
+				if(illum.a > 0.0)
+					illum.a = 1.0;
+#else
+				ao = 1.0;
+				//illum = computeLIC(pos, vectorData, streamDis, streamStart, streamEnd);
+                illum = computeLICwithAO(pos, vectorData, streamDis, streamStart, streamEnd, ao);
+#endif
+				//tfData = vec4(vectorData.rgb, 1.0);
+				//ao *= licKernel.b * 15;
+				ao = texture3D(noiseLAOSampler, pos).r;
+				//ao = texture3D(noiseSampler, pos).a;
+				
+				oldPos = pos;
 
                 // scale LIC intensity
                 illum.a *= licKernel.b * gradient.r;
@@ -70,15 +105,27 @@ void main(void)
                 // zoeckler/mallo/gradient/no illum
 #if defined(ILLUM_GRADIENT)
                 src = illumGradient(illum, tfData, pos, dir, vectorData.xyz);
+				//src = vec4(normalize(illum.rgb), 1.0);
 #elif defined(ILLUM_MALLO)
                 src = illumMallo(illum.a, tfData, pos, dir, vectorData.xyz);
-#elif defined(ILLUM_ZOECKLER)
+#elif defined(ILLUM_ZOECKLER) 
                 src = illumZoeckler(illum.a, tfData, pos, dir, vectorData.xyz);
+#elif defined(AMBIENT_OCCULUSION)
+
+				//src = illumLIC(intensity.a, tfData, ao);
+				tfData = vec4(1.0, 1.0, 1.0, 1.0);
+				//src = vec4(tfData * (ao));
+				if (ao > 0.0)
+					src = vec4(tfData.rgb * (1-ao), ao);
+				else
+					src = vec4(tfData.rgb * (1 - ao), 0.0);
+				//ao = clamp(1-ao, 0.0, 1.0);
+				//src = illumGradient(illum, tfData, pos, dir, vectorData.xyz, ao);
 #else
                 // -- standard LIC --
                 src = illumLIC(illum.a, tfData);
 #endif
-				
+				//src = vec4(normalize(vectorData.rgb), illum.a);
                 // perform blending
                 src.rgb *= src.a;
                 dest = clamp((1.0-dest.a)*src + dest, 0.0, 1.0);
@@ -95,5 +142,6 @@ void main(void)
     }
 #endif
 
+	dest = clamp((1.0-dest.a)*bgColor + dest, 0.0, 1.0); // make up to white background
     gl_FragColor = dest;
 }

@@ -57,6 +57,7 @@ struct Texture
     {
         //glEnable(texTarget);
         glActiveTextureARB(texUnit);
+		glBindTexture(texTarget, 0);
         glBindTexture(texTarget, id);
     }
     void unbind(void)

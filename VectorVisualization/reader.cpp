@@ -67,7 +67,7 @@ DatFile::DatFile(void)
 
     _sizes[0] = _sizes[1] = _sizes[2] = 0;
     _dists[0] = _dists[1] = _dists[2] = 1.0f;
-	_timestep = _timeStepBeg;
+	_timestep = 0;
 }
 
 
@@ -202,7 +202,7 @@ bool DatFile::parseDatFile(char *datFileName)
                         "(%d-%d).\n", _timeStepEnd, _timeStepBeg);
                     return false;
                 }
-				_timestep = _timeStepBeg;
+				_timestep = 0;
             }
             else
             {
@@ -326,11 +326,11 @@ void DatFile::parseDataDim(char *line)
 
 int DatFile::getNextTimeStep()
 {
-	_timestep = ( _timestep == _timeStepEnd ) ? _timeStepBeg : _timestep + 1;
+	_timestep = ( _timestep == _timeStepEnd - _timeStepBeg) ? 0 : _timestep + 1;
 	return _timestep;
 }
 
 int DatFile::NextTimeStep()
 {
-	return (_timestep == _timeStepEnd) ? _timeStepBeg : _timestep + 1;
+	return (_timestep == _timeStepEnd - _timeStepBeg) ? 0 : _timestep + 1;
 }

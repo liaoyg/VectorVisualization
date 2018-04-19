@@ -77,8 +77,12 @@ struct GLSLParamsLIC
     GLint licKernel;
     GLint numIterations;
     GLint alphaCorrection;
+	GLint maxVectorLength;
+	GLint minScalarRange;
+	GLint maxScalarRange;
 
     GLint volumeSampler;
+	GLint volumeSamplerNext;
 	GLint scalarSampler;
     GLint noiseSampler;
     GLint mcOffsetSampler;
@@ -90,8 +94,20 @@ struct GLSLParamsLIC
     GLint zoecklerSampler;
 	GLint licVolumeSampler;
 	GLint licVolumeSamplerOld;
+	GLint laoVolumeSampler;
+	GLint licVolumeNormalSampler;
+	GLint noiseLAOSampler;
+
+	GLint volumeImage;
 
     GLint imageFBOSampler;
+
+	GLint interpSize;
+	GLint interpStep;
+
+	GLint sampleNum;
+	GLint pointNum;
+	GLint maxRayLen;
 };
 
 struct GLSLParamsBackground

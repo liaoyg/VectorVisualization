@@ -8,6 +8,11 @@
 #include "fpsCounter.h"
 #include "dataSet.h"
 #include "parseArg.h"
+#include "CPULIC.h"
+
+HDC dc;
+HGLRC glrc_main;
+HGLRC glrc_load;
 
 ParseArguments arguments;
 Camera cam;
@@ -25,6 +30,8 @@ Illumination illum;
 LICFilter licFilter;
 
 OpenGLHUD hud;
+
+CPULIC *cpuLic;
 
 int mousePosOld[2];
 
@@ -48,12 +55,18 @@ bool useIdle = true;
 
 double lowResTimer = 0.0;
 
-RenderTechnique renderTechnique = VOLIC_VOLUME;
+RenderTechnique renderTechnique = VOLIC_RAYCAST;
 bool animationMode = false;
 MouseMode mouseMode;
 LICParams licParams;
+LAOParams laoParams;
 
 void display(void);
 void resize(int width, int height);
 void updateHUD(bool forceUpdate = false);
 void keyboard(unsigned char key, int x, int y);
+
+//Multi-thread
+std::mutex mt_load;
+bool load_volume_buffer = false;
+std::condition_variable cv_load;

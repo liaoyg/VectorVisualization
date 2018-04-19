@@ -43,7 +43,11 @@ void main(void)
     if (tfData.a > 0.05)
     {
         // compute the LIC integral
-        illum = computeLIC(pos, vectorData);
+		vec3 streamStart;
+		vec3 streamEnd;
+		vec2 streamDis;
+        illum = computeLIC(pos, vectorData, streamDis, streamStart, streamEnd);
+        //illum = computeLIC(pos, vectorData);
 
         // scale LIC intensity
         illum.a *= licKernel.b * gradient.r;

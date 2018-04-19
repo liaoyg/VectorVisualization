@@ -1,5 +1,14 @@
+vec3 sampleGrad(sampler3D tsampler, vec3 coord)
+{
+	const int offset = 1;
+	float dx = textureOffset(tsampler, coord, ivec3(offset, 0, 0)).x - textureOffset(tsampler, coord, ivec3(-offset, 0, 0)).x;
+	float dy = textureOffset(tsampler, coord, ivec3(0, offset, 0)).y - textureOffset(tsampler, coord, ivec3(0, -offset, 0)).y;
+	float dz = textureOffset(tsampler, coord, ivec3(0, 0, offset)).z - textureOffset(tsampler, coord, ivec3(0, 0, -offset)).z;
+	return normalize(vec3(dx, dy, dz));
+}
+
 vec4 illumGradient(in vec4 illum, in vec4 tfData,
-                   in vec3 pos, in vec3 dir, in vec3 tangent)
+                   in vec3 pos, in vec3 dir, in vec3 tangent, float ao = 1.0)
 {
     vec3 diffuse;
     vec3 specular;
@@ -26,7 +35,8 @@ vec4 illumGradient(in vec4 illum, in vec4 tfData,
      diffuse = diffuse.r * gl_LightSource[0].diffuse.rgb * gradient.g;
 
     // apply illumination
-    color.rgb = color.rgb * (diffuse + 0.3 + gl_LightSource[0].ambient.rgb) + specular;
+    //color.rgb = color.rgb * (diffuse + 0.3) + gl_LightSource[0].ambient.rgb * ao + specular;
+	color.rgb = color.rgb * (diffuse + 0.3) + vec3(0.1, 0.1, 0.1) * ao + specular;
 
     color.rgb *= gradient.g;
 
@@ -155,12 +165,12 @@ vec4 illumZoeckler(in float illum, in vec4 tfData,
 
 
 
-vec4 illumLIC(in float illum, in vec4 tfData)
+vec4 illumLIC(in float illum, in vec4 tfData, in float ao = 1.0)
 {
     vec4 color;
 
     // result = lic intensity * color * illumination scaling
-    color.rgb = illum * tfData.rgb * gradient.g;
+    color.rgb = illum * tfData.rgb * gradient.g * ao;
 
     // alpha affected by lic intensity
     color.a = texture1D(transferAlphaOpacSampler, illum*1.3).a * tfData.a;

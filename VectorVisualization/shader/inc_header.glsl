@@ -41,12 +41,18 @@ uniform vec3 licKernel;  // kernel step width forward (0.5/licParams.x),
 
 uniform float timeStep;
 
+uniform float maxVectorLength;
+
+ float minScalarRange = 4.0;
+ float maxScalarRange = 14.0;
 
 
 // textures (have to be uniform)
 uniform sampler3D volumeSampler;
+uniform sampler3D volumeSamplerNext;
 uniform sampler3D scalarSampler;
 uniform sampler3D noiseSampler;
+uniform sampler3D noiseLAOSampler;
 
 uniform sampler2DRect mcOffsetSampler;
 
@@ -61,3 +67,5 @@ uniform sampler2D malloSpecSampler;
 uniform sampler2D zoecklerSampler;
 
 uniform sampler2DRect imageFBOSampler;
+
+

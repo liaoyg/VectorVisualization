@@ -25,26 +25,26 @@ VolumeData::~VolumeData(void)
 {
 	std::cerr << "Volume data is to be deleted." << std::endl;
 	
-	for (auto d : dataSets) {
-		switch (dataType)
-		{
-		case DATRAW_UCHAR:
-			delete[] static_cast<unsigned char*>(d);
-			break;
-		case DATRAW_USHORT:
-			delete[] static_cast<unsigned short*>(d);
-			break;
-		case DATRAW_FLOAT:
-			delete[] static_cast<float*>(d);
-			break;
-		case DATRAW_NONE:
-		default:
-			if (d)
-				std::cerr << "~Volume: unknown data type" << std::endl;
-			break;
-		}
-		d = NULL;
-	}
+	//for (auto d : dataSets) {
+	//	switch (dataType)
+	//	{
+	//	case DATRAW_UCHAR:
+	//		delete[] static_cast<unsigned char*>(d);
+	//		break;
+	//	case DATRAW_USHORT:
+	//		delete[] static_cast<unsigned short*>(d);
+	//		break;
+	//	case DATRAW_FLOAT:
+	//		delete[] static_cast<float*>(d);
+	//		break;
+	//	case DATRAW_NONE:
+	//	default:
+	//		if (d)
+	//			std::cerr << "~Volume: unknown data type" << std::endl;
+	//		break;
+	//	}
+	//	d = NULL;
+	//}
 	data = NULL;
 }
 
@@ -85,12 +85,19 @@ VectorDataSet::VectorDataSet(void)
 	_vd = new VolumeData();
 	interpIndex = 0;
 	InterpSize = 1;
+	currentFrame = 0;
 }
 
 
 VectorDataSet::~VectorDataSet(void)
 {
 	delete _vd;
+	while (!_volumeSet.empty())
+	{
+		auto v = _volumeSet.front();
+		_volumeSet.pop_front();
+		delete v;
+	}
 }
 
 
@@ -199,14 +206,18 @@ void* VectorDataSet::loadTimeStep(int timeStep)
 	return _datFile.readRawData(timeStep);
 }
 
-void VectorDataSet::checkInterpolateStage()
+int VectorDataSet::checkInterpolateStage()
 {
 	if (interpIndex >= InterpSize)
 	{
-		_vd->data = loadTimeStep(getNextTimeStep());
-		_vd->newData = loadTimeStep(NextTimeStep());
+		//_vd->data = loadTimeStep(getNextTimeStep());
+		//_vd->newData = loadTimeStep(NextTimeStep());
+		_vd = _volumeSet.front();
+		_volumeSet.pop_front();
 		interpIndex = 0;
+		currentFrame++;
 	}
+	return interpIndex;
 }
 
 
@@ -349,8 +360,8 @@ void VectorDataSet::createTextureIterp(const char *texName,
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	//  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	//  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -365,33 +376,29 @@ void VectorDataSet::createTextureIterp(const char *texName,
 	paddedData = NULL;
 }
 
-void VectorDataSet::createTextures(const char *texName, int datasize,
-	GLuint texUnit,
-	bool floatTex)
+Texture * VectorDataSet::createTextures(int index, const char *texName, GLuint texUnit, bool floatTex)
 {
-	for (int i = 0; i < datasize; i++)
-	{
 		GLuint texId;
 		void *paddedData = NULL;
 
 		if (!_loaded)
-			return;
+			return nullptr;
 
-		Texture tex;
+		Texture * tex = new Texture;
 		char texSetName[100];
 		strcpy(texSetName, texName);
-		strcat(texSetName, std::to_string(i).c_str());
+		strcat(texSetName, std::to_string(index).c_str());
 
 		// create a texture id
-		if (tex.id == 0)
+		if (tex->id == 0)
 		{
 			glGenTextures(1, &texId);
-			tex.setTex(GL_TEXTURE_3D, texId, texSetName);
+			tex->setTex(GL_TEXTURE_3D, texId, texSetName);
 		}
-		tex.texUnit = texUnit;
-		tex.width = _vd->texSize[0];
-		tex.height = _vd->texSize[1];
-		tex.depth = _vd->texSize[2];
+		tex->texUnit = texUnit;
+		tex->width = _vd->texSize[0];
+		tex->height = _vd->texSize[1];
+		tex->depth = _vd->texSize[2];
 
 #if FORCE_POWER_OF_TWO_TEXTURE == 1
 		if ((_vd->texSize[0] != _vd->size[0])
@@ -406,23 +413,24 @@ void VectorDataSet::createTextures(const char *texName, int datasize,
 			_texSrcFmt = GL_FLOAT;
 			_texIntFmt = GL_RGBA16F_ARB;
 
-			paddedData = fillTexDataFloat();
+			paddedData = fillTexDataFloat(index);
 		}
 		else
 		{
 			_texSrcFmt = GL_UNSIGNED_BYTE;
 			_texIntFmt = GL_RGBA;
 
-			paddedData = fillTexDataChar();
+			paddedData = fillTexDataChar(index);
 		}
 
-		tex.format = _texIntFmt;
+		tex->format = _texIntFmt;
 
-		glBindTexture(GL_TEXTURE_3D, tex.id);
+		glBindTexture(GL_TEXTURE_3D, tex->id);
+		CHECK_FOR_OGL_ERROR();
 		glTexImage3D(GL_TEXTURE_3D, 0, _texIntFmt, _vd->texSize[0],
 			_vd->texSize[1], _vd->texSize[2], 0, GL_RGBA,
 			_texSrcFmt, paddedData);
-
+		CHECK_FOR_OGL_ERROR();
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -441,11 +449,12 @@ void VectorDataSet::createTextures(const char *texName, int datasize,
 			delete[](unsigned char*)paddedData;
 		paddedData = NULL;
 
-		_texSet.push_back(tex);
-	}
+		//_texSet.push_back(*tex);
+		//std::cout << "texSet size: " << _texSet.size() << std::endl;
+		return tex;
 }
 
-void* VectorDataSet::fillTexDataFloat(void)
+void* VectorDataSet::fillTexDataFloat(int i)
 {
 	int size = _vd->texSize[0] * _vd->texSize[1] * _vd->texSize[2];
 	int adr;
@@ -453,8 +462,18 @@ void* VectorDataSet::fillTexDataFloat(void)
 	float len;
 	float maxLen = -1.0;
 
-	unsigned char *dataU = (unsigned char*)_vd->data;
-	float *dataF = (float*)_vd->data;
+	unsigned char *dataU;
+	float *dataF;
+	if (i == 0)
+	{
+		dataU = (unsigned char*)_vd->data;
+		dataF = (float*)_vd->data;
+	}
+	else
+	{
+		dataU = (unsigned char*)_volumeSet[i]->data;
+		dataF = (float*)_volumeSet[i]->data;
+	}
 	float *padded = new float[4 * size];
 
 	memset(padded, 0, 4 * size * sizeof(float));
@@ -516,14 +535,14 @@ void* VectorDataSet::fillTexDataFloat(void)
 	}
 
 	// adapt the range of the magnitude to [0,1]
-	//for (int z = 0; z<_vd->size[2]; ++z)
-	//	for (int y = 0; y<_vd->size[1]; ++y)
-	//		for (int x = 0; x<_vd->size[0]; ++x)
-	//		{
-	//			adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
-	//			len = padded[4 * adrPacked + 3] / maxLen;
-	//			padded[4 * adrPacked + 3] = (len > 1.0f) ? 1.0f : ((len < 0.0f) ? 0.0f : len);
-	//		}
+	for (int z = 0; z<_vd->size[2]; ++z)
+		for (int y = 0; y<_vd->size[1]; ++y)
+			for (int x = 0; x<_vd->size[0]; ++x)
+			{
+				adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
+				len = padded[4 * adrPacked + 3] / maxLen;
+				padded[4 * adrPacked + 3] = (len > 1.0f) ? 1.0f : ((len < 0.0f) ? 0.0f : len);
+			}
 
 	return padded;
 }
@@ -536,7 +555,8 @@ void* VectorDataSet::fillTexDataFloatInterp()
 	int adr;
 	int adrPacked;
 	float len;
-	float maxLen = -1.0;
+	//float maxLen = -1.0;
+	_vd->max_magnetic = -1.0;
 
 	unsigned char *dataU = (unsigned char*)_vd->data;
 	unsigned char *dataNextU = (unsigned char*)_vd->newData;
@@ -611,8 +631,8 @@ void* VectorDataSet::fillTexDataFloatInterp()
 					}
 				}
 
-				if (len > maxLen)
-					maxLen = len;
+				if (len > _vd->max_magnetic)
+					_vd->max_magnetic = len;
 
 				// store magnitude as float for higher precision
 				padded[4 * adrPacked + 3] = len;
@@ -626,7 +646,7 @@ void* VectorDataSet::fillTexDataFloatInterp()
 			for (int x = 0; x<_vd->size[0]; ++x)
 			{
 				adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
-				len = padded[4 * adrPacked + 3] / maxLen;
+				len = padded[4 * adrPacked + 3] / _vd->max_magnetic;
 				padded[4 * adrPacked + 3] = (len > 1.0f) ? 1.0f : ((len < 0.0f) ? 0.0f : len);
 			}
 
@@ -634,7 +654,7 @@ void* VectorDataSet::fillTexDataFloatInterp()
 	return padded;
 }
 
-void* VectorDataSet::fillTexDataChar(void)
+void* VectorDataSet::fillTexDataChar(int i)
 {
 	int size = _vd->texSize[0] * _vd->texSize[1] * _vd->texSize[2];
 	int adr;
@@ -643,9 +663,18 @@ void* VectorDataSet::fillTexDataChar(void)
 	float maxLen = -1.0;
 
 	float *magnitude = new float[size];
-
-	unsigned char *dataU = (unsigned char*)_vd->data;
-	float *dataF = (float*)_vd->data;
+	unsigned char *dataU;
+	float *dataF;
+	if(i == 0)
+	{
+		dataU = (unsigned char*)_vd->data;
+		dataF = (float*)_vd->data;
+	}
+	else
+	{
+		dataU = (unsigned char*)_volumeSet[i]->data;
+		dataF = (float*)_volumeSet[i]->data;
+	}
 	unsigned char *padded = new unsigned char[4 * size];
 
 	memset(padded, 0, 4 * size * sizeof(char));
@@ -727,7 +756,7 @@ void* VectorDataSet::fillTexDataCharInterp()
 	int adr;
 	int adrPacked;
 	float len;
-	float maxLen = -1.0;
+	_vd->max_magnetic = -1.0;
 
 	float *magnitude = new float[size];
 
@@ -798,8 +827,8 @@ void* VectorDataSet::fillTexDataCharInterp()
 					}
 				}
 
-				if (len > maxLen)
-					maxLen = len;
+				if (len > _vd->max_magnetic)
+					_vd->max_magnetic = len;
 
 				// store magnitude as float for higher precision
 				magnitude[adrPacked] = len;
@@ -813,7 +842,7 @@ void* VectorDataSet::fillTexDataCharInterp()
 			for (int x = 0; x<_vd->size[0]; ++x)
 			{
 				adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
-				len = magnitude[adrPacked] / maxLen * UCHAR_MAX;
+				len = magnitude[adrPacked] / _vd->max_magnetic * UCHAR_MAX;
 				padded[4 * adrPacked + 3] = (unsigned char)((len > 255.0f) ? 255 : ((len < 0.0f) ? 0 : len));
 			}
 
@@ -1180,7 +1209,7 @@ void NoiseDataSet::createTexture(const char *texName,
 	GLuint texId;
 	int size;
 	int adr, adrPacked;
-	bool needPadding = false;
+	bool needPadding = true;
 	float *gradients = NULL;
 	unsigned char *packedData = NULL;
 	unsigned char *gradTmp = NULL;
@@ -1290,7 +1319,7 @@ void NoiseDataSet::createTexture(const char *texName,
 	}
 	else
 	{
-		_texIntFmt = GL_LUMINANCE; // because of noise
+		_texIntFmt = GL_INTENSITY; // because of noise
 		_texSrcFmt = GL_UNSIGNED_BYTE;
 
 		if (needPadding)
@@ -1327,8 +1356,8 @@ void NoiseDataSet::createTexture(const char *texName,
 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	//  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	//  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
