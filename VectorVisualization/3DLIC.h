@@ -25,6 +25,7 @@ Transform light;
 
 VectorDataSet vd;
 VolumeDataSet scalar; // load second dimension scalar data
+VectorDataSet vector;
 NoiseDataSet noise;
 Illumination illum;
 LICFilter licFilter;

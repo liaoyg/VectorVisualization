@@ -272,10 +272,11 @@ void* DatFile::readRawData(int timeStep)
     void *data = NULL;
 
     // check for boundaries
-    if ((timeStep < _timeStepBeg) || (timeStep > _timeStepEnd))
-    {
-        return NULL;
-    }
+	if(_timeStepBeg < _timeStepEnd)
+		if ((timeStep < _timeStepBeg) || (timeStep > _timeStepEnd))
+		{
+			return NULL;
+		}
 
     snprintf(rawFileName, 255, _rawFileName, timeStep);
 

@@ -43,14 +43,15 @@ uniform float timeStep;
 
 uniform float maxVectorLength;
 
- float minScalarRange = 4.0;
- float maxScalarRange = 14.0;
+ float minScalarRange = -1.01;
+ float maxScalarRange = 1.01;
 
 
 // textures (have to be uniform)
 uniform sampler3D volumeSampler;
 uniform sampler3D volumeSamplerNext;
 uniform sampler3D scalarSampler;
+uniform sampler3D vectorSampler;
 uniform sampler3D noiseSampler;
 uniform sampler3D noiseLAOSampler;
 

@@ -84,6 +84,7 @@ struct GLSLParamsLIC
     GLint volumeSampler;
 	GLint volumeSamplerNext;
 	GLint scalarSampler;
+	GLint vectorSampler;
     GLint noiseSampler;
     GLint mcOffsetSampler;
     GLint transferRGBASampler;

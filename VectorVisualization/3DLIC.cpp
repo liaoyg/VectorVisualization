@@ -104,6 +104,7 @@ void display(void)
 	//double timetest = timer();
 
 	renderer.render(updateScene || updateSceneCont);
+	
 
 	//std::cout << "cost for render" << timetest - timer() << std::endl;
 	//updateScene = true;
@@ -121,9 +122,11 @@ void display(void)
 	snprintf(fpsStr, 10, "%2.2f", fpsCounter.getFPS());
 	hud.DrawHUD(fpsStr, 420, 2);
 	//hud.DrawHUD();
+	//if(updateScene)
+	//	std::cout << fpsCounter << std::endl;
 
 	CHECK_FOR_OGL_ERROR();
-
+	//updateScene = false;
 	glutSwapBuffers();
 	fpsCounter.frameFinished();
 }
@@ -291,6 +294,8 @@ void keyboard(unsigned char key, int x, int y)
 		hud.SetVisible(!hud.IsVisible());
 		break;
 	case 'r':
+		renderer.loadGLSLShader("#define NOISE_LAO_COMPUTE");
+		renderer.computeNoiseLAO();
 		renderer.loadGLSLShader();
 		updateScene = true;
 		break;
@@ -483,6 +488,7 @@ void keyboard(unsigned char key, int x, int y)
 
 void keyboardSpecial(int key, int x, int y)
 {
+	double begint, ent;
 	switch (key)
 	{
 	case GLUT_KEY_F1:
@@ -500,13 +506,15 @@ void keyboardSpecial(int key, int x, int y)
 		break;
 	case GLUT_KEY_F4:
 		renderTechnique = VOLIC_LICVOLUME;
-		renderer.setDataTex(vd.getTextureSetRef(vd.getCurTimeStep()));
-		renderer.setNextDataTex(vd.getTextureSetRef(vd.NextTimeStep()));
+		renderer.setDataTex(vd.getTextureRef());
+		//begint = timer();
 		renderer.renderLICVolume();
 		renderer.computeVolumeNormal();
 		//renderer.updateLICVolume();
 		renderer.computeLAOVolume();
 		//renderer.updateLICVolume();
+		//ent = timer();
+		//std::cout<<"pre-computed LIC: "<< ent-begint << std::endl;
 		break;
 	case GLUT_KEY_F5:
 		animationMode = !animationMode;
@@ -796,12 +804,21 @@ void init(void)
 	std::cout << std::endl;
 
 	// load secondary scalar volume data
-	if (!scalar.loadData("..\\data\\outputraw\\out_64_0_temperature.dat"))
+	if (!scalar.loadData("..\\data\\327output\\out_64_0_temperature.dat"))
 	{
 		std::cerr << "Could not load data ..." << std::endl;
 		exit(1);
 	}
 	scalar.createTexture("Scalar_Tex", GL_TEXTURE4_ARB);
+
+	//load secondary vector data
+	if (!vector.loadData("..\\data\\327output\\out_64_0_vorticity.dat"))
+	{
+		std::cerr << "Could not load data ..." << std::endl;
+		exit(1);
+	}
+	vector.getVolumeData()->data = vector.loadTimeStep(0);
+	vector.createTexture("Vector_Tex", GL_TEXTURE6_ARB, true);
 
 	// load LIC filter kernel
 	if (!licFilter.loadData(arguments.getLicFilterFileName()))
@@ -843,16 +860,19 @@ void init(void)
 	//std::cout << std::endl;
 
 	//Test of Algorithm using CPU for instance
+	//double begint = timer();
 	//cpuLic = new CPULIC(256, 256, 256);
 	//cpuLic->setkernelData(licFilter.getFilterData());
-	//cpuLic->setVectorTexture((vd.getTextureSet())[1]);
+	//cpuLic->setVectorTexture(vd.getTextureRef());
 	//cpuLic->getVectorTextureData();
 	//cpuLic->setNoiseData(&noise);
 	//cpuLic->getNoiseTextureData();
 	////cpuLic->gather3DLIC(vd.getVolumeDataSet());
 	//cpuLic->scatter3DLIC(vd.getVolumeDataSet());
+	//double endt = timer();
 	//cpuLic->generateTexture();
-	CHECK_FOR_OGL_ERROR();
+	//CHECK_FOR_OGL_ERROR();
+	//std::cout << "CPU LIC:" << endt - begint << std::endl;
 
 	clipPlanes[0].rotate(Quaternion_fromAngleAxis(static_cast<float>(M_PI / 2.0), Vector3_new(0.0f, 1.0f, 0.0f)));
 	clipPlanes[1].rotate(Quaternion_fromAngleAxis(static_cast<float>(M_PI / 2.0), Vector3_new(-1.0f, 0.0f, 0.0f)));
@@ -883,6 +903,7 @@ void init(void)
 	//renderer.setDataTex(vd.getTextureSetRef(vd.getCurTimeStep()));
 	renderer.setNextDataTex(vd.getTextureSetRef(vd.NextTimeStep()));
 	renderer.setScalarTex(scalar.getTextureRef());
+	renderer.setVectorTex(vector.getTextureRef());
 	renderer.setNoiseTex(noise.getTextureRef());
 	renderer.setTFrgbTex(tfEdit.getTextureRGB());
 	renderer.setTFalphaOpacTex(tfEdit.getTextureAlphaOpac());

@@ -88,6 +88,7 @@ public:
 	void setDataTex(Texture *tex) { _dataTex = tex; }
 	void setNextDataTex(Texture *tex) { _nextDataTex = tex; }
 	void setScalarTex(Texture *tex) { _scalarTex = tex; }
+	void setVectorTex(Texture *tex) { _vectorTex = tex; }
 	void setNoiseTex(Texture *tex) { _noiseTex = tex; }
 	void setLICFilterTex(Texture *tex) { _licKernelTex = tex; }
 	void setLambda2Tex(Texture *tex) { _lambda2Tex = tex; }
@@ -288,6 +289,7 @@ private:
 	Texture *_dataTex;
 	Texture *_nextDataTex;
 	Texture *_scalarTex;
+	Texture *_vectorTex;
 	Texture *_noiseTex;
 	// LIC filter kernel
 	Texture *_licKernelTex;

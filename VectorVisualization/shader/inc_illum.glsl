@@ -7,6 +7,60 @@ vec3 sampleGrad(sampler3D tsampler, vec3 coord)
 	return normalize(vec3(dx, dy, dz));
 }
 
+
+vec3 sampleGrad2(sampler3D tsampler, vec3 coord)
+{
+	int[3][3][3][3] weights =
+	{
+		{ { { -1, -3, -1 },
+		{ -3, -6, -3 },
+		{ -1, -3, -1 } },
+		{ { 0,  0,  0 },
+		{ 0,  0,  0 },
+		{ 0,  0,  0 } },
+		{ { 1,  3,  1 },
+		{ 3,  6,  3 },
+		{ 1,  3,  1 } } },
+		{ { { -1, -3, -1 },
+		{ 0,  0,  0 },
+		{ 1,  3,  1 } },
+		{ { -3, -6, -3 },
+		{ 0,  0,  0 },
+		{ 3,  6,  3 } },
+		{ { -1, -3, -1 },
+		{ 0,  0,  0 },
+		{ 1,  3,  1 } } },
+		{ { { -1,  0,  1 },
+		{ -3,  0,  3 },
+		{ -1,  0,  1 } },
+		{ { -3,  0,  3 },
+		{ -6,  0,  6 },
+		{ -3,  0,  3 } },
+		{ { -1,  0,  1 },
+		{ -3,  0,  3 },
+		{ -1,  0,  1 } } }
+	};
+	float gp[3];
+	for (int dir = 0; dir < 3; ++dir)
+	{
+		gp[dir] = 0.0f;
+		for (int i = -1; i < 2; i++)
+		{
+			for (int j = -1; j < 2; j++)
+			{
+				for (int k = -1; k < 2; k++)
+				{
+					gp[dir] += weights[dir][i + 1][j + 1][k + 1] *
+						textureOffset(tsampler, coord, ivec3(i, j, k)).r;
+				}
+			}
+		}
+		gp[dir] /= 2.0f;
+	}
+
+	return normalize(vec3(gp[0], gp[1], gp[2]));
+}
+
 vec4 illumGradient(in vec4 illum, in vec4 tfData,
                    in vec3 pos, in vec3 dir, in vec3 tangent, float ao = 1.0)
 {
@@ -36,7 +90,9 @@ vec4 illumGradient(in vec4 illum, in vec4 tfData,
 
     // apply illumination
     //color.rgb = color.rgb * (diffuse + 0.3) + gl_LightSource[0].ambient.rgb * ao + specular;
-	color.rgb = color.rgb * (diffuse + 0.3) + vec3(0.1, 0.1, 0.1) * ao + specular;
+	//float ambientl = clamp(ao, 0.0, 1.0);
+	//color.rgb *= ao;
+	color.rgb = color.rgb * ((diffuse + 0.3) + vec3(0.3, 0.3, 0.3))*ao + specular;
 
     color.rgb *= gradient.g;
 
@@ -46,6 +102,9 @@ vec4 illumGradient(in vec4 illum, in vec4 tfData,
 
     // opacity and color correction
     color.a = 1.0 - pow(1.0 - color.a, alphaCorrection);
+
+	//color = vec4(1.0, 1.0, 1.0, 1.0) * ao;
+	//color.a = 1 - ao;
 
     return color;
 }
@@ -165,12 +224,12 @@ vec4 illumZoeckler(in float illum, in vec4 tfData,
 
 
 
-vec4 illumLIC(in float illum, in vec4 tfData, in float ao = 1.0)
+vec4 illumLIC(in float illum, in vec4 tfData, in float ao = 0.0)
 {
     vec4 color;
 
     // result = lic intensity * color * illumination scaling
-    color.rgb = illum * tfData.rgb * gradient.g * ao;
+    color.rgb = illum * tfData.rgb * gradient.g;
 
     // alpha affected by lic intensity
     color.a = texture1D(transferAlphaOpacSampler, illum*1.3).a * tfData.a;
@@ -179,4 +238,10 @@ vec4 illumLIC(in float illum, in vec4 tfData, in float ao = 1.0)
     color.a = 1.0 - pow(1.0 - color.a, alphaCorrection);
 
     return color;
+}
+
+vec4 illumDirection(in vec4 color, in float dir = 0.0)
+{
+	color.rgb = color.rgb + color.rgb * (1.0 - dir) * vec3(0.2, 0.2, 0.2);
+	return color;
 }

@@ -30,7 +30,7 @@ void main(void)
     vec4 volumeData;
 	vec4 vectorData;
 	vec4 normalData;
-	float ao = 0.0;
+	float ao = 1.0;
 
     vec4 dest = vec4(0.0);
     vec4 src;
@@ -43,46 +43,69 @@ void main(void)
             // lookup scalar value
             vectorData = texture3D(volumeSampler, pos);
             volumeData = texture3D(licVolumeSampler, pos);
-			normalData = texture3D(licVolumeNormalSampler, pos);
-
+			//normalData = texture3D(licVolumeNormalSampler, pos);
+			normalData = vec4(sampleGrad2(licVolumeSampler, pos), 1.0);
 			vec4 intensity = vec4(normalData.rgb, volumeData.r);
-
 			//float intensity = normalData.r ;
-			//volumeData.r *= licKernel.b * gradient.r;		
+			//volumeData.r *= licKernel.b * gradient.r;	
+			//float scalarData = texture3D(scalarSampler, pos).r;
 
             // lookup in transfer function
-            //tfData = texture1D(transferRGBASampler, vectorData.z);
+			//vec3 center = vec3(0.76, 0.5, 0.5);
+			//if(distance(pos, center) < 0.232)
+			//if(pos.x >=0.5)
+			if (vectorData.a > 0.0)
+			{
 #if defined(AMBIENT_OCCULUSION)
-			ao = texture3D(laoVolumeSampler, pos).r;
+				ao = texture3D(laoVolumeSampler, pos).r;
 #endif
-			//tfData = vec4(0.0, 1.0, 0.0, 1.0);
-			tfData = vec4(vectorData.rgb, 1.0);
+				//tfData = vec4(0.0, 1.0, 0.0, 1.0);
+				//tfData = vec4(vectorData.rgb, 1.0);
+
+				float scalarROI = texture3D(vectorSampler, pos).a;
+				//float scalarROI = texture3D(scalarSampler, pos).r;
+				//tfData = texture1D(transferRGBASampler, scalarROI);
+				tfData = texture1D(transferRGBASampler, vectorData.a);
 #if defined(ILLUM_GRADIENT)
 				//intensity = vec4(normalize(intensity.rgb), intensity.a);
-                //src = illumGradient(intensity, tfData, pos, dir, vectorData.xyz);
-				src = vec4(normalize(intensity.rgb), 1.0);
+				src = illumGradient(intensity, tfData, pos, dir, vectorData.xyz);
+				//src = vec4(normalize(intensity.rgb), 1.0);
 #elif defined(ILLUM_MALLO)
-                src = illumMallo(intensity.a, tfData, pos, dir, vectorData.xyz);
+				src = illumMallo(intensity.a, tfData, pos, dir, vectorData.xyz);
 #elif defined(ILLUM_ZOECKLER)
-                src = illumZoeckler(intensity.a, tfData, pos, dir, vectorData.xyz);
+				src = illumZoeckler(intensity.a, tfData, pos, dir, vectorData.xyz);
 #elif defined(AMBIENT_OCCULUSION)
 				//src = illumLIC(intensity.a, tfData, ao);
-				tfData = vec4(1.0, 1.0, 1.0, 1.0);
-				if(ao > 0.0)
-					src = vec4(tfData.rgb * (1 - ao), ao);
+				bool showLAO = false;
+				if (showLAO)
+				{
+					tfData = vec4(0.8, 0.8, 0.8, 1.0);
+					//src = vec4(tfData * (ao));
+					if (ao > 0.0)
+						src = vec4(tfData.rgb * (1.0 - ao), ao);
+					else
+						src = vec4(tfData.rgb * ao, 0.0);
+					src.a = 1.0 - pow(1.0 - src.a, alphaCorrection);
+					//src = illumLIC(ao, tfData);
+
+				}
 				else
-					src = vec4(tfData.rgb * (1 - ao), 0.0);
+				{
+					ao = clamp(ao, 0.0, 1.0);
+					src = illumGradient(intensity, tfData*ao, pos, dir, vectorData.xyz);
+					//src.rgb = vec3(0.25)*ao;
+				}
 #else
-                // -- standard LIC --
-                src = illumLIC(intensity.a, tfData);
+				// -- standard LIC --
+				src = illumLIC(intensity.a, tfData);
 #endif
-			//src = illumLIC(intensity, tfData);
-			//src = volumeData;
+				//src = illumLIC(intensity, tfData);
+				//src = volumeData;
 
-            // perform blending
-            src.rgb *= src.a;
-            dest = clamp((1.0-dest.a)*src + dest, 0.0, 1.0);
-
+				// perform blending
+				src.rgb *= src.a;
+				dest = clamp((1.0 - dest.a)*src + dest, 0.0, 1.0);
+			}
             // move one step forward
             pos += dir * stepSize;
 			// early ray termination with high opacity

@@ -57,14 +57,15 @@ float noiseLookup(in vec3 objPos, in float freqScale, out float logEyeDist)
 
 // preserve same spatial frequencies of the noise with respect to
 // the image plane
-vec4 freqSamplingGrad(in vec3 pos, in int level, out float logEyeDist, in sampler3D vectorVolume = volumeSampler)
+vec4 freqSamplingGrad(in vec3 pos, in float level, out float logEyeDist, in sampler3D vectorVolume = volumeSampler)
 {
-	vec4 vectorData = texture3D(vectorVolume, pos);
-
-	//float minRange = 0.0;
-	//float maxRange = 30.0;
-	//magnitude range equation
-	if (vectorData.a > minScalarRange / maxVectorLength  && vectorData.a < maxScalarRange / maxVectorLength)
+	vec4 vectorData = texture3D(vectorSampler, pos);
+	vectorData.xyz = vectorData.xyz*2.0 - 1.0;
+	//float scalarData = texture3D(scalarSampler, pos).r;
+	//scalarData = (scalarData*2.0 - 1.0);
+	//vectorData.z = abs(vectorData.z);
+	//if (scalarData > minScalarRange && scalarData < maxScalarRange)
+	if (vectorData.z > minScalarRange && vectorData.z < maxScalarRange)
 	{
 		//return texture3D(noiseSampler, pos).a
 		vec4 res = texture3D(noiseSampler, pos*gradient.z);
@@ -80,26 +81,17 @@ vec4 freqSamplingGrad(in vec3 pos, in int level, out float logEyeDist, in sample
 }
 
 
-float freqSampling(in vec3 pos, in int level, out float logEyeDist, in sampler3D vectorVolume = volumeSampler)
+float freqSampling(in vec3 pos, in float level, out float logEyeDist, in sampler3D vectorVolume = volumeSampler)
 {
     //vec3 objPos = pos * scaleVolInv.xyz;
 
-	//Use scalar data to decide noise range to be integrated
-	vec4 vectorData = texture3D(vectorVolume, pos);
-	//vec4 scalarData = texture3D(scalarSampler, pos); 
-	//float scala = length(vectorData.xyz);
-	
-	//if (scalarData.r > 0.1  && scalarData.r < 0.3)
-	
-	// one example of visualize range: magnetic_field (magnitude 7.0 ~ max)
-	//float minRange = 2.0;
-	//float maxRange = 30.0;
-	//magnitude range equation
-	//minScalarRange = 1.0;
-	//maxScalarRange = 13.0;
-	if (vectorData.a > minScalarRange /maxVectorLength  && vectorData.a < maxScalarRange /maxVectorLength)
-	// g component range equation: map to 0 ~ 1.0, 0 is 0.5
-	//if (vectorData.b > ( 0.5 * minRange/maxVectorLength + 0.5)  && vectorData.b < ( 0.5 * maxRange/maxVectorLength + 0.5))
+	vec4 vectorData = texture3D(vectorSampler, pos);
+	vectorData.xyz = vectorData.xyz*2.0 - 1.0;
+	//float scalarData = texture3D(scalarSampler, pos).r;
+	//scalarData = (scalarData*2.0 - 1.0);
+	//vectorData.z = abs(vectorData.z);
+	//if (scalarData > minScalarRange && scalarData < maxScalarRange)
+	if (vectorData.z > minScalarRange && vectorData.z < maxScalarRange)
 	//if (true)
 	{
 		//return texture3D(noiseSampler, pos).a
@@ -114,16 +106,16 @@ float freqSampling(in vec3 pos, in int level, out float logEyeDist, in sampler3D
 		return 0;
 }
 
-float noiseLAOSampling(in vec3 pos, in int level, in sampler3D vectorVolume = volumeSampler)
+float noiseLAOSampling(in vec3 pos, in float level, in sampler3D vectorVolume = volumeSampler)
 {
 	//Use scalar data to decide noise range to be integrated
-	vec4 vectorData = texture3D(vectorVolume, pos);
-
-	// one example of visualize range: magnetic_field (magnitude 7.0 ~ max)
-	//float minRange = 2.0;
-	//float maxRange = 30.0;
-	//magnitude range equation
-	if (vectorData.a > minScalarRange / maxVectorLength  && vectorData.a < maxScalarRange / maxVectorLength)
+	vec4 vectorData = texture3D(vectorSampler, pos);
+	vectorData.xyz = vectorData.xyz*2.0 - 1.0;
+	//float scalarData = texture3D(scalarSampler, pos).r;
+	//scalarData = (scalarData*2.0 - 1.0);
+	//vectorData.z = abs(vectorData.z);
+	//if (scalarData > minScalarRange && scalarData < maxScalarRange)
+	if (vectorData.z > minScalarRange && vectorData.z < maxScalarRange)
 	{
 		//return texture3D(noiseSampler, pos).a
 		float res = texture3D(noiseLAOSampler, pos*gradient.z).r;
@@ -138,14 +130,14 @@ float noiseLAOSampling(in vec3 pos, in int level, in sampler3D vectorVolume = vo
 }
 
 #ifdef USE_NOISE_GRADIENTS
-vec4 singleLICstep(in vec3 licdir, in out vec3 newPos, in int level,
+vec4 singleLICstep(in vec3 licdir, in out vec3 newPos, in float level,
                    in out vec4 step, in float kernelOffset,
                    in out float logEyeDist, in float dir, in out float ao,
 				   in sampler3D vectorVolume  = volumeSampler)
 {
     vec4 noise;
 #else
-float singleLICstep(in vec3 licdir, in out vec3 newPos, in int level,
+float singleLICstep(in vec3 licdir, in out vec3 newPos, in float level,
                    in out vec4 step, in float kernelOffset,
                    in out float logEyeDist, in float dir, in out float ao,
 				   in sampler3D vectorVolume  = volumeSampler)
@@ -181,16 +173,16 @@ float singleLICstep(in vec3 licdir, in out vec3 newPos, in int level,
 #endif
 
 #ifdef USE_NOISE_GRADIENTS
-    noise = freqSamplingGrad(newPos, level, logEyeDist);
+    noise = freqSamplingGrad(newPos, level, logEyeDist, vectorVolume);
     //noise = vec4(texture3D(noiseSampler, newPos).a);
 #else
-    noise = freqSampling(newPos, level, logEyeDist);
+    noise = freqSampling(newPos, level, logEyeDist, vectorVolume);
 #endif
 
     // determine weighting
     noise *= texture1D(licKernelSampler, kernelOffset).r;
 #ifdef AMBIENT_OCCULUSION
-	ao += noiseLAOSampling(newPos, level) * texture1D(licKernelSampler, kernelOffset).r;
+	ao += noiseLAOSampling(newPos, level, vectorVolume) * texture1D(licKernelSampler, kernelOffset).r;
 #endif
 
 
@@ -215,19 +207,24 @@ vec4 computeLIC(in vec3 pos, in vec4 vectorFieldSample,
     vec4 vectorFieldSample2;
 #endif
 	// decide which noise sampling level will use for this lic computation
-	int level = 0;
-	//if (pos.z > 0.5)
-	//	level = 2;
+	float level = 0;
+	//float scalar = texture3D(scalarSampler, pos).r;
+	//if (pos.z < 0.5)
+	//	level = 2.2;
 	//else
-	//	level = 1;
+	//	level = 1.2;
 	
     // perform first lookup
 #ifdef USE_NOISE_GRADIENTS
     vec4 noise;
-    vec4 illum = freqSamplingGrad(pos,level, logEyeDist);
+    vec4 illum = freqSamplingGrad(pos,level, logEyeDist, vectorVolume);
+	vec4 illum_front = vec4(0.0);
+	vec4 illum_back = vec4(0.0);
 #else
     float noise;
-    float illum = freqSampling(pos, level, logEyeDist);
+    float illum = freqSampling(pos, level, logEyeDist, vectorVolume);
+	float illum_front = 0.0;
+	float illum_back = 0.0;
 #endif
 
     // weight sample with lic kernel at position 0
@@ -247,7 +244,7 @@ vec4 computeLIC(in vec3 pos, in vec4 vectorFieldSample,
 		//licdir = step.rgb;
         kernelOffset -= licKernel.y;
 		vec3 oldPos = newPos;
-        illum += singleLICstep(licdir, newPos, level, step, 
+        illum_front += singleLICstep(licdir, newPos, level, step, 
                                kernelOffset, logEyeDist, dir, ao, vectorVolume);
 		streamlineL += length(newPos - oldPos);
 		sumCross += length(cross(oldPos, newPos));
@@ -264,41 +261,47 @@ vec4 computeLIC(in vec3 pos, in vec4 vectorFieldSample,
 		//licdir = step.rgb;
         kernelOffset += licKernel.x;
 		vec3 oldPos = newPos;
-        illum += singleLICstep(licdir, newPos, level, step, 
+        illum_back += singleLICstep(licdir, newPos, level, step, 
                                kernelOffset, logEyeDist, dir, ao, vectorVolume);
 		streamlineL += length(newPos - oldPos);
 		sumCross += length(cross(newPos, oldPos));
     }
     streamStart = newPos;
 	streamDis = vec2(streamlineL, sumCross);
-    return vec4(illum);
+    return vec4(illum+illum_front+illum_back);
 }
 
 vec4 computeLICwithAO(in vec3 pos, in vec4 vectorFieldSample,
 	out vec2 streamDis, out vec3 streamStart,
-	out vec3 streaEnd, in out float ao,
+	out vec3 streaEnd, in out float ao, out float direction,
 	in sampler3D vectorVolume = volumeSampler)
 {
 	vec3 licdir;
 	float logEyeDist;
 	float kernelOffset = 0.5;
+	//indicate the volume is going forward or backward
 #ifdef TIME_DEPENDENT
 	vec4 vectorFieldSample2;
 #endif
 	// decide which noise sampling level will use for this lic computation
-	int level = 0;
-	//if (pos.z > 0.5)
-	//	level = 2;
+	float level = 0;
+	//float scalar = texture3D(scalarSampler, pos).r;
+	//if (pos.z < 0.5)
+	//	level = 2.2;
 	//else
-	//	level = 1;
+	//	level = 1.2;
 
 	// perform first lookup
 #ifdef USE_NOISE_GRADIENTS
 	vec4 noise;
 	vec4 illum = freqSamplingGrad(pos, level, logEyeDist);
+	vec4 illum_front = vec4(0.0);
+	vec4 illum_back = vec4(0.0);
 #else
 	float noise;
 	float illum = freqSampling(pos, level, logEyeDist);
+	float illum_front = 0.0;
+	float illum_back = 0.0;
 #endif
 	//return vec4(illum);
 
@@ -319,7 +322,7 @@ vec4 computeLICwithAO(in vec3 pos, in vec4 vectorFieldSample,
 		//licdir = step.rgb;
 		kernelOffset -= licKernel.y;
 		vec3 oldPos = newPos;
-		illum += singleLICstep(licdir, newPos, level, step,
+		illum_front += singleLICstep(licdir, newPos, level, step,
 			kernelOffset, logEyeDist, dir, ao, vectorVolume);
 		streamlineL += length(newPos - oldPos);
 		sumCross += length(cross(oldPos, newPos));
@@ -336,14 +339,25 @@ vec4 computeLICwithAO(in vec3 pos, in vec4 vectorFieldSample,
 		//licdir = step.rgb;
 		kernelOffset += licKernel.x;
 		vec3 oldPos = newPos;
-		illum += singleLICstep(licdir, newPos, level, step,
+		illum_back += singleLICstep(licdir, newPos, level, step,
 			kernelOffset, logEyeDist, dir, ao, vectorVolume);
 		streamlineL += length(newPos - oldPos);
 		sumCross += length(cross(newPos, oldPos));
 	}
 	streamStart = newPos;
 	streamDis = vec2(streamlineL, sumCross);
-	return vec4(illum);
+#ifdef USE_NOISE_GRADIENTS
+	if (illum_front.a == 0.0 && illum_back.a == 0)
+		direction = 0.0;
+	else
+		direction = (illum_front.a - illum_back.a);
+#else
+	if (illum_front == 0.0 && illum_back == 0)
+		direction = 0.0;
+	else
+		direction = (illum_front - illum_back);
+#endif
+	return vec4(illum+illum_front+illum_back);
 }
 
 float computeStreamlineDis(in vec3 p, in vec3 q )

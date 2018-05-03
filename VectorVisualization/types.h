@@ -88,7 +88,7 @@ struct LICParams
 	LICParams(void) : stepSizeVol(1.0f / 256.0f), gradientScale(30.0f),
 		illumScale(1.0f), freqScale(1.0f),
 		numIterations(255),
-		stepsForward(48), stepsBackward(48),
+		stepsForward(32), stepsBackward(32),
 		stepSizeLIC(0.01f),
 		interpSize(1), interpStep(0),
 		minScalarRange(0.0), maxScalarRange(1.0)
@@ -113,7 +113,7 @@ struct LICParams
 
 struct LAOParams
 {
-	LAOParams(void) : sampleNum(6), pointNum(48), maxRayLen(0.1)
+	LAOParams(void) : sampleNum(6), pointNum(96), maxRayLen(0.06)
 	{}
 
 	int sampleNum;

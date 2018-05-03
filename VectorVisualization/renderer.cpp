@@ -33,7 +33,7 @@ Renderer::Renderer(void) : _framebuffer(0), _depthbuffer(0), _stencilbuffer(0),
 _winWidth(1), _winHeight(1), _useFBO(false),
 _renderMode(VOLIC_RAYCAST), _vd(NULL), _licFilter(NULL),
 _dataTex(NULL), _nextDataTex(NULL), _noiseTex(NULL), _licKernelTex(NULL), _scalarTex(NULL),
-_lambda2Tex(NULL), _tfRGBTex(NULL), _tfAlphaOpacTex(NULL),
+_vectorTex(NULL), _lambda2Tex(NULL), _tfRGBTex(NULL), _tfAlphaOpacTex(NULL),
 _illumZoecklerTex(NULL), _illumMalloDiffTex(NULL),
 _illumMalloSpecTex(NULL), _quadric(NULL), _storeFrame(true),
 _lowRes(false), _wireframe(false), _screenShot(false), _recording(false), _licParams(NULL),
@@ -1133,6 +1133,11 @@ void Renderer::setRenderVolTextures(GLSLParamsLIC *param)
 		glUniform1iARB(param->scalarSampler, _scalarTex->texUnit - GL_TEXTURE0_ARB);
 		_scalarTex->bind();
 	}
+	if (param->vectorSampler > -1)
+	{
+		glUniform1iARB(param->vectorSampler, _vectorTex->texUnit - GL_TEXTURE0_ARB);
+		_vectorTex->bind();
+	}
 	if (param->noiseSampler > -1)
 	{
 		glUniform1iARB(param->noiseSampler, _noiseTex->texUnit - GL_TEXTURE0_ARB);
@@ -1457,7 +1462,7 @@ void Renderer::renderLICVolume(void)
 	glEnable(GL_BLEND);
 
 	glGetFloatv(GL_COLOR_CLEAR_VALUE, color);
-	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glClearColor(0.0, 0.0, 0.0, 1.0);
 
 	_volumeRenderShader.enableShader();
 
@@ -1469,6 +1474,7 @@ void Renderer::renderLICVolume(void)
 	for (int z = 0; z < depth; z++)
 	{
 		_licvolumebuffer->attachLayer(0, z);
+		CHECK_FRAMEBUFFER_STATUS();
 		_licvolumebuffer->attachLayer(1, z);
 		CHECK_FRAMEBUFFER_STATUS();
 		//render volume to 3D Texture

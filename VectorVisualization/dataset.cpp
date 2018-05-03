@@ -525,8 +525,8 @@ void* VectorDataSet::fillTexDataFloat(int i)
 					}
 				}
 
-				if (len > maxLen)
-					maxLen = len;
+				if (len > _vd->max_magnetic)
+					_vd->max_magnetic = len;
 
 				// store magnitude as float for higher precision
 				padded[4 * adrPacked + 3] = len;
@@ -970,7 +970,7 @@ void VolumeDataSet::createTexture(const char *texName,
 	int size;
 	int adr;
 	int adrPacked;
-	bool needPadding = false;
+	bool needPadding = true;
 	void *paddedData = _vd->data;
 
 	if (!_loaded)
@@ -1018,7 +1018,8 @@ void VolumeDataSet::createTexture(const char *texName,
 
 	size = _vd->texSize[0] * _vd->texSize[1] * _vd->texSize[2];
 
-
+	float maxt = -1000.0;
+	float mint = 1000.0;
 	if (needPadding)
 	{
 		if (_vd->dataType == DATRAW_UCHAR)
@@ -1048,7 +1049,7 @@ void VolumeDataSet::createTexture(const char *texName,
 						adrPacked = (z*_vd->texSize[1] + y)*_vd->texSize[0] + x;
 						adr = (z*_vd->size[1] + y)*_vd->size[0] + x;
 						((float*)paddedData)[adrPacked] =
-							((float*)_vd->data)[adr];
+							(((float*)_vd->data)[adr] + 1.0) / 2.0;
 					}
 		}
 	}

@@ -24,7 +24,7 @@ CPULIC::CPULIC(int w, int h, int d)
 	data = new float[size];
 	std::fill_n(data, size, 0);
 
-	iterNum = 30;
+	iterNum = 1;
 	stepSize = 1.0 / width;
 
 	createFilter();

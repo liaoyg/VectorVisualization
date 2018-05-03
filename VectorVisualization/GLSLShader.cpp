@@ -341,7 +341,8 @@ char* GLSLShader::loadSource(char *fileName, int *size)
 GLSLParamsLIC::GLSLParamsLIC(void) : viewport(-1),texMax(-1),scaleVol(-1),
                                      scaleVolInv(-1),stepSize(-1),gradient(-1),
                                      licParams(-1),licKernel(-1),numIterations(-1),
-                                     alphaCorrection(-1),volumeSampler(-1), volumeSamplerNext(-1), scalarSampler(-1),
+                                     alphaCorrection(-1),volumeSampler(-1), volumeSamplerNext(-1), 
+									 scalarSampler(-1),vectorSampler(-1),
 									 licVolumeSampler(-1), licVolumeSamplerOld(-1), licVolumeNormalSampler(-1),
                                      noiseSampler(-1),mcOffsetSampler(-1), noiseLAOSampler(-1),
                                      transferRGBASampler(-1),
@@ -379,6 +380,7 @@ void GLSLParamsLIC::getMemoryLocations(GLhandleARB programObj, bool printList)
     volumeSampler = -1;
 	volumeSamplerNext = -1;
 	scalarSampler = -1;
+	vectorSampler = -1;
     noiseSampler = -1;
     mcOffsetSampler = -1;
     transferRGBASampler = -1;
@@ -511,6 +513,10 @@ void GLSLParamsLIC::getMemoryLocations(GLhandleARB programObj, bool printList)
 		else if (strcmp(buf, "scalarSampler") == 0)
 		{
 			scalarSampler = i;
+		}
+		else if (strcmp(buf, "vectorSampler") == 0)
+		{
+			vectorSampler = i;
 		}
         else if (strcmp(buf, "noiseSampler") == 0)
         {

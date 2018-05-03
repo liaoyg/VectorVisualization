@@ -53,6 +53,7 @@ void main(void)
 
             // lookup scalar value
             vectorData = texture3D(volumeSampler, pos);
+
             /*
             // TODO: use lambda2 volume ...
             vectorData.a = texture3D(lambda2Sampler, pos).r;
@@ -60,14 +61,17 @@ void main(void)
 
             // lookup in transfer function
 			// use secondary scalar data to map color value
-			vec4 scalarData = texture3D(scalarSampler, pos); 
-            tfData = vec4(vectorData.rgb, 1.0);
+			//float scalarData = texture3D(scalarSampler, pos).r; 
+            
+			//tfData = vec4(vectorData.rgb, 1.0);
 
 #if defined(STREAMLINE_DISTANCE)
 			if(vectorData.a > 0.5 && vectorData.a < 0.75)
 #else
-			if (scalarData.g > -0.01)
+			if (vectorData.a > 0.0)
 #endif
+			//vec3 center = vec3(0.76, 0.5, 0.5);
+			//if (distance(pos, center) < 0.232)
             {
                 // compute the LIC integral
 				vec3 streamStart;
@@ -88,24 +92,34 @@ void main(void)
 					illum.a = 1.0;
 #else
 				ao = 1.0;
+				float dirt;
 				//illum = computeLIC(pos, vectorData, streamDis, streamStart, streamEnd);
-                illum = computeLICwithAO(pos, vectorData, streamDis, streamStart, streamEnd, ao);
+                illum = computeLICwithAO(pos, vectorData, streamDis, streamStart, streamEnd, ao, dirt);
 #endif
-				//tfData = vec4(vectorData.rgb, 1.0);
-				//ao *= licKernel.b * 15;
-				ao = texture3D(noiseLAOSampler, pos).r;
-				//ao = texture3D(noiseSampler, pos).a;
+				ao *= licKernel.b * gradient.r;
+				//ao = texture3D(noiseLAOSampler, pos).r;
+				//illum = texture3D(noiseSampler, pos);
 				
 				oldPos = pos;
 
                 // scale LIC intensity
                 illum.a *= licKernel.b * gradient.r;
 
+				float scalarROI = texture3D(vectorSampler, pos).a;
+				//float scalarROI = texture3D(scalarSampler, pos).r;
+				//tfData = texture1D(transferRGBASampler, scalarROI);
+				tfData = texture1D(transferRGBASampler, vectorData.a);
+
+				//project estimated normal to the plane perpendicular to vector.
+				vec3 normal = normalize(illum.rgb);
+				normal = cross(cross(vectorData.rgb, normal) / length(vectorData.rgb), vectorData.rgb) / length(vectorData.rgb);
+
                 // perform illumination
                 // zoeckler/mallo/gradient/no illum
 #if defined(ILLUM_GRADIENT)
+				//illum.rgb *= illum.rgb * 2;
                 src = illumGradient(illum, tfData, pos, dir, vectorData.xyz);
-				//src = vec4(normalize(illum.rgb), 1.0);
+				//src = vec4(normal, 1.0);
 #elif defined(ILLUM_MALLO)
                 src = illumMallo(illum.a, tfData, pos, dir, vectorData.xyz);
 #elif defined(ILLUM_ZOECKLER) 
@@ -113,21 +127,36 @@ void main(void)
 #elif defined(AMBIENT_OCCULUSION)
 
 				//src = illumLIC(intensity.a, tfData, ao);
-				tfData = vec4(1.0, 1.0, 1.0, 1.0);
-				//src = vec4(tfData * (ao));
-				if (ao > 0.0)
-					src = vec4(tfData.rgb * (1-ao), ao);
+				bool showLAO = true;
+				if (showLAO)
+				{
+					//tfData = vec4(1.0, 1.0, 1.0, 1.0);
+					//src = vec4(tfData * (ao));
+					src = illumLIC(illum.a, tfData);
+					if (ao > 0.0)
+						src = vec4(src.rgb * ao, src.a*ao);
+					else
+						src = vec4(src.rgb * ao, 0.0);
+					//src.a = 1.0 - pow(1.0 - src.a, alphaCorrection);
+				}
 				else
-					src = vec4(tfData.rgb * (1 - ao), 0.0);
-				//ao = clamp(1-ao, 0.0, 1.0);
-				//src = illumGradient(illum, tfData, pos, dir, vectorData.xyz, ao);
+				{
+					ao = clamp(ao, 0.0, 1.0);
+					src = illumGradient(illum, tfData, pos, dir, vectorData.xyz, ao);
+				}
 #else
                 // -- standard LIC --
                 src = illumLIC(illum.a, tfData);
 #endif
+				// using illum to shwo directional info
+				//src = illumDirection(src, dirt);
+
 				//src = vec4(normalize(vectorData.rgb), illum.a);
                 // perform blending
+
                 src.rgb *= src.a;
+				vec3 centert = vec3(0.76, 0.5, 0.5);
+
                 dest = clamp((1.0-dest.a)*src + dest, 0.0, 1.0);
             }
 
@@ -141,7 +170,6 @@ void main(void)
         }
     }
 #endif
-
 	dest = clamp((1.0-dest.a)*bgColor + dest, 0.0, 1.0); // make up to white background
     gl_FragColor = dest;
 }
