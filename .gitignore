@@ -246,3 +246,6 @@ ModelManifest.xml
 /noise
 /VectorVisualization/snapshotOut
 /VectorVisualization/video
+*.png
+*.exe
+*.csv
