@@ -81,6 +81,12 @@ enum MouseMode
 	VOLIC_MOUSE_TRANSLATE_CLIP
 };
 
+enum MenuMode{
+	MENU_LIGHTING = 1,
+	MENU_POLYMODE,
+	MENU_TEXTURING,
+	MENU_EXIT
+};
 
 struct LICParams
 {
