@@ -54,7 +54,7 @@ void main(void)
 			//vec3 center = vec3(0.76, 0.5, 0.5);
 			//if(distance(pos, center) < 0.232)
 			//if(pos.x >=0.5)
-			if (vectorData.a > 0.0)
+			if (vectorData.a > 0.1)
 			{
 #if defined(AMBIENT_OCCULUSION)
 				ao = texture3D(laoVolumeSampler, pos).r;

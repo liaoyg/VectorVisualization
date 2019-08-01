@@ -43,8 +43,8 @@ uniform float timeStep;
 
 uniform float maxVectorLength;
 
- float minScalarRange = -1.01;
- float maxScalarRange = 1.01;
+ float minScalarRange = 0.0;
+ float maxScalarRange = 0.5;
 
 
 // textures (have to be uniform)

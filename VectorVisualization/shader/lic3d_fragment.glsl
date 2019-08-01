@@ -68,7 +68,7 @@ void main(void)
 #if defined(STREAMLINE_DISTANCE)
 			if(vectorData.a > 0.5 && vectorData.a < 0.75)
 #else
-			if (vectorData.a > 0.0)
+			if (vectorData.a > 0.1)
 #endif
 			//vec3 center = vec3(0.76, 0.5, 0.5);
 			//if (distance(pos, center) < 0.232)

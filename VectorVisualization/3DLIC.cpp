@@ -804,7 +804,7 @@ void init(void)
 	std::cout << std::endl;
 
 	// load secondary scalar volume data
-	if (!scalar.loadData("..\\data\\327output\\out_64_0_temperature.dat"))
+	if (!scalar.loadData("..\\data\\327output\\out_64_0_Lorentz_work.dat"))
 	{
 		std::cerr << "Could not load data ..." << std::endl;
 		exit(1);
